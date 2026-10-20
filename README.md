@@ -1,7 +1,7 @@
 # Unsupervised Model Ensembling for False Alarm Reduction in Anomaly Detection
 
 BSc thesis code (BME VIK). Planning documents, `results/` and writing live in the OneDrive project folder
-(`C:\Users\rifat\OneDrive\Documents\ClaudeTest`, see `src/thesis/paths.py`).
+(`C:\Users\rifat\OneDrive\Documents\thesis-docs`, see `src/thesis/paths.py`).
 
 ## Setup
 
