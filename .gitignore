@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Raw data and score cache are regenerable and too large for git
+data/raw/
+cache/
+
+# Kaggle API token must never be committed
+kaggle.json
