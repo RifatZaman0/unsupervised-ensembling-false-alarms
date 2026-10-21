@@ -13,6 +13,20 @@ BSc thesis code (BME VIK). Planning documents, `results/` and writing live in th
 
 Python 3.11. pandas stays below 3 because adtk 0.6.2 does not run on pandas 3.
 
+## Data
+
+```
+set PYTHONPATH=src            (PowerShell: $env:PYTHONPATH="src")
+.venv\Scripts\python.exe -m thesis.download          # ADBench (pinned commit) + ULB (Kaggle), then checksum check
+.venv\Scripts\python.exe -m thesis.export_datasets   # dataset table -> results/tables/datasets/
+```
+
+- ADBench: all 47 classical `.npz` files from `Minqi824/ADBench` at the commit in `src/thesis/download.py`.
+  The selection rule in `src/thesis/data.py` picks the 15 sets; `tests/test_data.py` checks it.
+- ULB: `creditcard.csv` from Kaggle. Features V1–V28 + log1p(Amount); `Time` is the split variable only.
+  Day 1 = `Time < 86400` (fit), day 2 = test.
+- `data/manifest.json` holds SHA-256 checksums of every raw file.
+
 ## Layout
 
 - `src/thesis/`: loaders, detectors (`score`), fusion (`fuse`), metrics, splits
