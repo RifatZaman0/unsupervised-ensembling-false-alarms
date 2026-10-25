@@ -24,8 +24,20 @@ def budget_k(budget: float, n: int) -> int:
 
 
 def tp_at_k(scores: np.ndarray, y: np.ndarray, k: int) -> float:
-    """Expected true positives among the top k scores, ties broken at random."""
-    scores, y = np.asarray(scores, dtype=np.float64), np.asarray(y)
+    """Expected true positives among the top k scores, ties broken at random.
+
+    Raises ValueError for non-1-D or mismatched inputs, NaN in scores or labels, and k that is
+    not an integer in 1..n.
+    """
+    scores, y = np.asarray(scores, dtype=np.float64), np.asarray(y, dtype=np.float64)
+    if scores.ndim != 1 or y.ndim != 1 or len(scores) != len(y):
+        raise ValueError(f"scores {scores.shape} and y {y.shape} must be 1-D of equal length")
+    if np.isnan(scores).any():
+        raise ValueError(f"scores contain {int(np.isnan(scores).sum())} NaN value(s)")
+    if np.isnan(y).any():
+        raise ValueError(f"y contains {int(np.isnan(y).sum())} NaN value(s)")
+    if isinstance(k, (bool, np.bool_)) or not isinstance(k, (int, np.integer)):
+        raise ValueError(f"k must be an integer, got {k!r}")
     if not 1 <= k <= len(scores):
         raise ValueError(f"k={k} outside 1..{len(scores)}")
     kth = np.partition(scores, len(scores) - k)[len(scores) - k]
