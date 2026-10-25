@@ -6,9 +6,9 @@
 
 Scores come from the score cache; only scores missing for the current cache key are computed
 (the count is printed and recorded). Writes results/tables/e1/e1_runs.csv (one row per
-dataset x seed x detector x budget), e1_runs.meta.json with the commit, and the summary
-tables (thesis.e1_summary). With non-default switches (thesis.config) everything goes to
-results/tables/e1/variants/<switches>/ instead, so the main outputs are never overwritten.
+dataset x seed x detector x budget), e1_runs.meta.json with the commit, the summary
+tables (thesis.e1_summary) and the CD diagrams in results/figures/e1/ (thesis.e1_figures). With non-default switches (thesis.config) everything goes to
+results/{tables,figures}/e1/variants/<switches>/ instead, so the main outputs are never overwritten.
 Fraud data is not touched here.
 """
 from __future__ import annotations
@@ -21,11 +21,12 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-from thesis import config, data, detectors, e1_summary, metrics, scorecache
+from thesis import config, data, detectors, e1_figures, e1_summary, metrics, scorecache
 from thesis.export_datasets import git_state
-from thesis.paths import TABLES
+from thesis.paths import FIGURES, TABLES
 
 OUT = TABLES / "e1"
+FIG_OUT = FIGURES / "e1"
 NAN = float("nan")
 
 
@@ -61,9 +62,9 @@ def run(datasets) -> tuple[pd.DataFrame, dict]:
     return pd.DataFrame(rows), stats
 
 
-def out_dir(protocol: config.Protocol):
+def out_dir(protocol: config.Protocol, root=OUT):
     tag = protocol.tag()
-    return OUT / "variants" / tag if tag else OUT
+    return root / "variants" / tag if tag else root
 
 
 def main(argv: list[str]) -> None:
@@ -99,7 +100,14 @@ def main(argv: list[str]) -> None:
     }
     (out / "e1_runs.meta.json").write_text(json.dumps(meta, indent=1) + "\n", encoding="utf-8")
     e1_summary.write(out, meta)
-    print("wrote", out, len(df), "rows + summary")
+    per_ds = e1_summary.per_dataset(pd.read_csv(out / "e1_runs.csv"))
+    fig_out = out_dir(protocol, FIG_OUT)
+    for r in e1_figures.write(per_ds, fig_out, meta, metrics.ADBENCH_BUDGETS):
+        ranks = ", ".join(f"{d} {v:.2f}" for d, v in r["avg_ranks"].items())
+        print(f"FP@K {r['budget']:.0%}: Friedman chi2 = {r['friedman_chi2']:.3f}, "
+              f"p = {r['friedman_p']:.4g}; CD = {r['cd']:.3f}; average ranks: {ranks}; "
+              f"groups: {r['groups']}")
+    print("wrote", out, len(df), "rows + summary;", fig_out, "CD diagrams")
 
 
 if __name__ == "__main__":
