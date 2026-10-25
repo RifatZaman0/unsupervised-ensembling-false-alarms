@@ -19,6 +19,8 @@ from pyod.models.lof import LOF
 from pyod.models.pca import PCA
 from scipy.stats import skew
 
+from thesis import config
+
 DETECTORS = ("IForest", "PCA", "ECOD", "HBOS", "KNN", "LOF")
 SEEDED = ("IForest",)  # detectors whose result depends on the seed
 # KNN / LOF are fitted on at most this many training rows (Master Plan: 30,000-row sample on
@@ -69,6 +71,17 @@ class TrainOnlyECOD:
         return np.maximum(u_skew, np.maximum(u_l, u_r)).sum(axis=1)
 
 
+class NonFiniteScores(ValueError):
+    """A detector returned inf or NaN scores."""
+
+
+def params() -> dict:
+    """PARAMS under the current protocol; min_variance_ratio None = no PCA component drop."""
+    if config.PROTOCOL.pca_drop_zero_variance:
+        return PARAMS
+    return {**PARAMS, "PCA": {**PARAMS["PCA"], "min_variance_ratio": None}}
+
+
 class RankSafePCA:
     """PyOD PCA with library defaults, minus principal directions of (numerically) zero variance.
 
@@ -76,14 +89,18 @@ class RankSafePCA:
     zero-variance direction (from constant or collinear features, e.g. in cardio) makes every
     score infinite. Components whose ratio is <= min_variance_ratio are dropped by refitting with
     n_components = the number of remaining ones. Deviation from defaults; reported in the
-    hyperparameter table.
+    hyperparameter table. min_variance_ratio=None keeps every component (plain PyOD PCA).
     """
 
-    def __init__(self, standardization: bool = True, min_variance_ratio: float = 1e-10):
+    def __init__(self, standardization: bool = True, min_variance_ratio: float | None = 1e-10):
         self.standardization, self.min_variance_ratio = standardization, min_variance_ratio
 
     def fit(self, X: np.ndarray) -> "RankSafePCA":
         det = PCA(standardization=self.standardization).fit(X)
+        if self.min_variance_ratio is None:
+            self.n_dropped_ = 0
+            self.detector_, self.decision_scores_ = det, det.decision_scores_
+            return self
         keep = int((det.detector_.explained_variance_ratio_ > self.min_variance_ratio).sum())
         self.n_dropped_ = det.n_components_ - keep
         if self.n_dropped_:
@@ -97,7 +114,7 @@ class RankSafePCA:
 
 
 def make_detector(name: str, seed: int | None = None):
-    p = PARAMS[name]
+    p = params()[name]
     if name == "IForest":
         return IForest(**p, random_state=seed)
     if name == "PCA":
@@ -138,5 +155,6 @@ def score(name: str, X_fit: np.ndarray, X_score: np.ndarray,
         det.fit(X_fit)
         s_fit = np.asarray(det.decision_scores_, dtype=np.float64)
     s_score = np.asarray(det.decision_function(X_score), dtype=np.float64)
-    assert np.isfinite(s_fit).all() and np.isfinite(s_score).all(), f"{name}: non-finite scores"
+    if not (np.isfinite(s_fit).all() and np.isfinite(s_score).all()):
+        raise NonFiniteScores(f"{name}: non-finite scores")
     return s_fit, s_score

@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
+from thesis import config
 from thesis.paths import DATA_RAW
 
 ADBENCH_DIR = DATA_RAW / "adbench"
@@ -99,12 +100,27 @@ def select_adbench(catalogue: pd.DataFrame) -> list[str]:
 
 
 def load_adbench(name: str) -> tuple[np.ndarray, np.ndarray]:
-    """Features as float64 and labels as int8 (1 = anomaly)."""
+    """Features as float64 and labels as int8 (1 = anomaly).
+
+    Duplicate rows are kept unless config.PROTOCOL.adbench_dedup is on.
+    """
     with np.load(adbench_files()[name], allow_pickle=False) as d:
         X, y = d["X"].astype(np.float64), d["y"].astype(np.int8)
     assert np.isfinite(X).all(), f"{name}: non-finite feature values"
     assert set(np.unique(y)) <= {0, 1}, f"{name}: labels are not binary"
+    if config.PROTOCOL.adbench_dedup:
+        X, y = dedup_rows(X, y)
     return X, y
+
+
+def dedup_rows(X: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Keep the first occurrence of each exact (features, label) row, in file order.
+
+    Rows with equal features but different labels are both kept (they are not duplicates).
+    """
+    _, first = np.unique(np.column_stack([X, y]), axis=0, return_index=True)
+    keep = np.sort(first)
+    return X[keep], y[keep]
 
 
 def split_adbench(name: str, seed: int, X: np.ndarray | None = None,
@@ -168,6 +184,11 @@ class Standardizer:
 
     def transform(self, X: np.ndarray) -> np.ndarray:
         return (X - self.mean) / self.scale
+
+
+def preprocess(split: Split) -> Split:
+    """Detector input: z-scored with training statistics, or unchanged if zscore_inputs is off."""
+    return standardize(split) if config.PROTOCOL.zscore_inputs else split
 
 
 def standardize(split: Split) -> Split:

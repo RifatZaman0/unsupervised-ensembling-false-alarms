@@ -15,12 +15,27 @@ import math
 import numpy as np
 from sklearn.metrics import average_precision_score, roc_auc_score
 
+from thesis import config
+
 ADBENCH_BUDGETS = (0.02, 0.05)
 
 
-def budget_k(budget: float, n: int) -> int:
-    """Number of alerts for a budget given as a share of the rows (at least 1)."""
-    return max(1, math.ceil(round(budget * n, 9)))
+def budget_k(budget: float, n: int, rule: str | None = None) -> int:
+    """Number of alerts for a budget given as a share of the rows (at least 1).
+
+    rule: 'ceil' / 'round' (half up) / 'floor'; default config.PROTOCOL.k_rule.
+    """
+    x = round(budget * n, 9)  # 7.000000000000001 must count as 7
+    rule = rule or config.PROTOCOL.k_rule
+    if rule == "ceil":
+        k = math.ceil(x)
+    elif rule == "round":
+        k = math.floor(x + 0.5)
+    elif rule == "floor":
+        k = math.floor(x)
+    else:
+        raise ValueError(f"unknown k rule {rule!r}")
+    return max(1, k)
 
 
 def tp_at_k(scores: np.ndarray, y: np.ndarray, k: int) -> float:
