@@ -30,7 +30,8 @@ set PYTHONPATH=src            (PowerShell: $env:PYTHONPATH="src")
 ## Detectors, fusion, E1
 
 ```
-.venv\Scripts\python.exe -m thesis.e1          # all E1 outputs: e1_runs.csv + summary tables in results/tables/e1/
+.venv\Scripts\python.exe -m thesis.e1          # all E1 outputs: e1_runs.csv + summary tables in results/tables/e1/,
+                                               # CD diagrams (Friedman + Nemenyi) in results/figures/e1/
                                                # (scores from cache/scores/; missing ones are computed)
 .venv\Scripts\python.exe -m thesis.e1 cardio   # quick check on one dataset, writes nothing to results/
 .venv\Scripts\python.exe -m thesis.e1 --no-zscore --k-rule round --no-pca-drop --dedup

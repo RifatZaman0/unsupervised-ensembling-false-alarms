@@ -73,9 +73,9 @@ def cd_diagram(res: dict, path_stem, commit: str) -> None:
     avg, k, cd = res["avg_ranks"], res["k_detectors"], res["cd"]
     names, ranks = list(avg), list(avg.values())
     half = math.ceil(k / 2)
-    fig, ax = plt.subplots(figsize=(6.4, 1.2 + 0.32 * half))
+    fig, ax = plt.subplots(figsize=(6.4, 1.3 + 0.25 * half))
     ax.set_xlim(0.5, k + 0.5)
-    ax.set_ylim(-(half + 1.2), 1.6)
+    ax.set_ylim(-(0.5 * half + 0.6), 1.9)
     ax.axis("off")
     ax.hlines(0, 1, k, color="black", lw=1)
     for t in range(1, k + 1):
