@@ -75,6 +75,15 @@ def test_train_only_ecod_is_finite_beyond_training_range():
     assert np.isfinite(score("ECOD", X_fit, X_new)[1]).all()
 
 
+def test_train_only_ecod_handles_constant_columns():
+    """Standardized constant columns (mnist border pixels) are all zeros; skewness is NaN there."""
+    X_fit, X_new = blobs()
+    X_fit[:, 2], X_new[:, 2] = 0.0, 0.0
+    s_fit, s_new = score("ECOD", X_fit, X_new)
+    assert np.isfinite(s_fit).all() and np.isfinite(s_new).all()
+    assert np.allclose(s_fit, ECOD().fit(X_fit).decision_scores_, rtol=0, atol=1e-10)
+
+
 @needs_adbench
 def test_ecod_batch_check_on_real_data():
     """The Master Plan's 'ECOD batch check' on cardio: PyOD's ECOD changes scores, ours does not."""

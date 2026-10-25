@@ -26,7 +26,7 @@ PREPROCESSING = "zscore-train"  # thesis.data.standardize, statistics from the t
 def cache_key() -> str:
     spec = {"params": detectors.PARAMS, "max_fit_rows": detectors.MAX_FIT_ROWS,
             "preprocessing": PREPROCESSING, "pyod": pyod.__version__,
-            "ecod": "train-only-v1"}
+            "ecod": "train-only-v2"}
     return hashlib.sha256(json.dumps(spec, sort_keys=True).encode()).hexdigest()[:10]
 
 

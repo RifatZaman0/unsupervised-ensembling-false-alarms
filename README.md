@@ -27,6 +27,24 @@ set PYTHONPATH=src            (PowerShell: $env:PYTHONPATH="src")
   Day 1 = `Time < 86400` (fit), day 2 = test.
 - `data/manifest.json` holds SHA-256 checksums of every raw file.
 
+## Detectors, fusion, E1
+
+```
+.venv\Scripts\python.exe -m thesis.e1          # fill cache/scores/ for 15 ADBench sets x 5 seeds x 6 detectors
+                                               # and write results/tables/e1/e1_runs.csv
+.venv\Scripts\python.exe -m thesis.e1 cardio   # quick check on one dataset, writes nothing to results/
+```
+
+- `detectors.score(name, X_fit, X_score, seed)` → (training scores, new-row scores); PyOD defaults, inputs
+  z-scored with training statistics. Deviations: ECOD is a train-only re-implementation (PyOD's ECOD scores new
+  rows together with the training rows, so scores depend on the batch); PCA drops zero-variance components
+  (PyOD's weighted PCA gives infinite scores otherwise, e.g. on cardio). KNN/LOF use leave-one-out training scores.
+- `fusion.fuse(S_train, S_test, calib, agg)`: min-max / z-score / train-percentile × mean / max, calibrators fitted
+  on training scores only. Primary: min-max + mean.
+- `metrics`: FP@K, Precision@K, Recall@K with K = ceil(budget × n_test); ties at the K-th score are split in
+  expectation, so row order never decides an alert.
+- The cache folder name is a hash of detector parameters, preprocessing and PyOD version (`scorecache.cache_key`).
+
 ## Layout
 
 - `src/thesis/`: loaders, detectors (`score`), fusion (`fuse`), metrics, splits

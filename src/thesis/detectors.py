@@ -43,13 +43,14 @@ class TrainOnlyECOD:
     Here the ECDFs and the skewness signs are fixed at fit time; a new row x gets
     F_left(x) = #{train <= x} / n and F_right(x) = #{train >= x} / n, floored at 1/n (the smallest
     value a training row can have) so rows beyond the training range stay finite.
-    On the training rows this equals PyOD's fit-time scores exactly.
+    On the training rows this equals PyOD's fit-time scores (up to float rounding).
     """
 
     def fit(self, X: np.ndarray) -> "TrainOnlyECOD":
         self.sorted_ = np.sort(X, axis=0)
         self.n_ = len(X)
-        self.skew_sign_ = np.sign(skew(X, axis=0))
+        # a constant column has skewness NaN; PyOD maps it to 0 as well
+        self.skew_sign_ = np.sign(np.nan_to_num(skew(X, axis=0), nan=0.0))
         self.decision_scores_ = self.decision_function(X)
         return self
 
