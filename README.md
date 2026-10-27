@@ -34,6 +34,8 @@ set PYTHONPATH=src            (PowerShell: $env:PYTHONPATH="src")
                                                # CD diagrams (Friedman + Nemenyi) in results/figures/e1/
                                                # (scores from cache/scores/; missing ones are computed)
 .venv\Scripts\python.exe -m thesis.e1 cardio   # quick check on one dataset, writes nothing to results/
+.venv\Scripts\python.exe -m thesis.e1_corr     # Spearman heatmap of detector test scores + per-dataset CSV
+                                               # in results/figures/e1/ (from the score cache)
 .venv\Scripts\python.exe -m thesis.e1 --no-zscore --k-rule round --no-pca-drop --dedup
                                                # provisional protocol switches (src/thesis/config.py);
                                                # non-default runs go to results/tables/e1/variants/<switches>/
