@@ -26,6 +26,9 @@ set PYTHONPATH=src            (PowerShell: $env:PYTHONPATH="src")
 - ULB: `creditcard.csv` from Kaggle. Features V1–V28 + log1p(Amount); `Time` is the split variable only.
   Day 1 = `Time < 86400` (fit), day 2 = test.
 - `data/manifest.json` holds SHA-256 checksums of every raw file.
+- ADBench files are used as distributed, duplicates included (this is not a full reproduction of the
+  ADBench protocol). `python -m thesis.export_datasets` writes the duplicate table
+  `results/tables/datasets/duplicates.csv`.
 
 ## Detectors, fusion, E1
 
@@ -39,6 +42,8 @@ set PYTHONPATH=src            (PowerShell: $env:PYTHONPATH="src")
 .venv\Scripts\python.exe -m thesis.e1 --no-zscore --k-rule round --no-pca-drop --dedup
                                                # provisional protocol switches (src/thesis/config.py);
                                                # non-default runs go to results/tables/e1/variants/<switches>/
+.venv\Scripts\python.exe -m thesis.e1 --dedup  # duplicate robustness check: E1 without exact duplicates,
+.venv\Scripts\python.exe -m thesis.e1_dedup    # then ranks compared with the main E1 (variants/dedup/dedup_vs_main.*)
 ```
 
 - `detectors.score(name, X_fit, X_score, seed)` → (training scores, new-row scores); PyOD defaults, inputs

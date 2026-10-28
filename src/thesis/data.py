@@ -123,6 +123,32 @@ def dedup_rows(X: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     return X[keep], y[keep]
 
 
+def duplicate_stats(X: np.ndarray, y: np.ndarray) -> dict:
+    """How much exact duplication a dataset has (for the duplicate table and the dedup check).
+
+    rows_in_dup_groups: rows whose (features, label) occurs more than once
+    rows_removed / anomalies_removed: what dedup_rows drops
+    label_conflict_rows: rows whose features also occur with the other label (kept by dedup)
+    """
+    _, inv, counts = np.unique(np.column_stack([X, y]), axis=0, return_inverse=True,
+                               return_counts=True)
+    _, xinv = np.unique(X, axis=0, return_inverse=True)
+    inv, xinv = inv.ravel(), xinv.ravel()
+    labels_per_x = pd.Series(y).groupby(xinv).nunique().to_numpy()
+    in_group = counts[inv] > 1
+    first = np.zeros(len(y), dtype=bool)
+    first[np.unique(inv, return_index=True)[1]] = True
+    _, yd = dedup_rows(X, y)
+    return {"n_rows": len(y), "n_anomalies": int(y.sum()),
+            "rows_in_dup_groups": int(in_group.sum()),
+            "anomalies_in_dup_groups": int((in_group & (y == 1)).sum()),
+            "rows_removed": int((~first).sum()),
+            "anomalies_removed": int(((~first) & (y == 1)).sum()),
+            "label_conflict_rows": int((labels_per_x[xinv] > 1).sum()),
+            "n_rows_dedup": len(yd), "anomaly_rate": float(y.mean()),
+            "anomaly_rate_dedup": float(yd.mean())}
+
+
 def split_adbench(name: str, seed: int, X: np.ndarray | None = None,
                   y: np.ndarray | None = None) -> Split:
     """Random stratified 60/40 split. Training rows keep their anomalies (unsupervised setting)."""
