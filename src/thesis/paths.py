@@ -1,5 +1,5 @@
 """Central paths. Code, raw data and the score cache live in this repo (outside OneDrive);
-results/ and writing live in the OneDrive project folder so Claude Desktop can read them."""
+results/ and writing live in the OneDrive project folder next to the thesis documents."""
 import os
 from pathlib import Path
 
