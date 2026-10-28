@@ -31,13 +31,14 @@ def nemenyi_cd(k: int, n: int, alpha: float = ALPHA) -> float:
 
 
 def friedman_nemenyi(per_ds: pd.DataFrame, metric: str = "fp_at_k", budget: float = 0.05,
-                     lower_is_better: bool = True, alpha: float = ALPHA) -> dict:
+                     lower_is_better: bool = True, alpha: float = ALPHA,
+                     item: str = "detector") -> dict:
     """Friedman test (chi-square and Iman-Davenport F) and Nemenyi CD for one metric and budget.
 
     per_ds: e1_summary.per_dataset output (one row per dataset x budget x detector, seed means).
+    item: the column holding what is ranked (thesis.e2 passes "combo").
     """
-    wide = per_ds[per_ds.budget == budget].pivot(index="dataset", columns="detector",
-                                                 values=metric)
+    wide = per_ds[per_ds.budget == budget].pivot(index="dataset", columns=item, values=metric)
     if wide.isna().any().any():
         raise ValueError(f"{metric} at budget {budget}: missing values, cannot rank")
     n, k = wide.shape

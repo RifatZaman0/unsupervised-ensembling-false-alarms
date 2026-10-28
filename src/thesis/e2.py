@@ -21,9 +21,11 @@ Outputs in results/tables/e2/: e2_runs.csv (one row per dataset x seed x combo x
 budget), e2_runs.meta.json, e2_per_dataset.csv (seed means, rank of the combo among combos of
 the same size per dataset / config / budget), e2_summary.csv (combo x config x budget: average
 rank, #datasets beating the best / median member), e2_headline.csv (size x config x budget:
-share of combo-dataset cells beating the best / median member) and e2_summary.md (headline and
-the triple ranking under the primary config, from which E-bench is chosen). Each names the
-commit. Fraud data is not touched here.
+share of combo-dataset cells beating / tying the best / median member), e2_friedman.csv
+(primary config, per budget and size: Friedman test over the combos, Nemenyi CD) and
+e2_summary.md (headline, and the triple ranking under the primary config with its Friedman
+test, from which E-bench is chosen). Each names the commit. The figures (thesis.e2_figures) are
+written in the same run. Fraud data is not touched here.
 """
 from __future__ import annotations
 
@@ -37,7 +39,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-from thesis import config, data, detectors, fusion, metrics, scorecache
+from thesis import config, data, detectors, e1_figures, fusion, metrics, scorecache
 from thesis.e1 import OUT as E1_OUT
 from thesis.e1 import out_dir
 from thesis.export_datasets import git_state
@@ -154,6 +156,8 @@ def per_dataset(runs: pd.DataFrame) -> pd.DataFrame:
     df["rank_fp_at_k"] = df.groupby(CELL)["fp_at_k"].rank(method="average")
     df["beats_best"] = df["delta_fp_best"] < 0
     df["beats_median"] = df["delta_fp_median"] < 0
+    df["ties_best"] = df["delta_fp_best"] == 0
+    df["ties_median"] = df["delta_fp_median"] == 0
     return df
 
 
@@ -171,18 +175,47 @@ def summary(per_ds: pd.DataFrame) -> pd.DataFrame:
 
 
 def headline(per_ds: pd.DataFrame) -> pd.DataFrame:
-    """Size x config x budget: share of (combo, dataset) cells where the ensemble has fewer
-    false alarms than its best / median member, and the median relative delta."""
+    """Size x config x budget: share of (combo, dataset) cells where the ensemble has fewer /
+    exactly as many false alarms as its best / median member (the rest: more), and the median
+    relative delta."""
     g = per_ds.groupby(["budget", "size", "calib", "agg"])
     df = pd.DataFrame({"n_cells": g.size(),
                        "share_beats_best": g["beats_best"].mean(),
+                       "share_ties_best": g["ties_best"].mean(),
                        "share_beats_median": g["beats_median"].mean(),
+                       "share_ties_median": g["ties_median"].mean(),
                        "median_delta_fp_best_rel": g["delta_fp_best_rel"].median(),
                        "median_delta_fp_median_rel": g["delta_fp_median_rel"].median()})
     return df.reset_index()
 
 
-def markdown(head: pd.DataFrame, summ: pd.DataFrame, meta: dict) -> str:
+def friedman(per_ds: pd.DataFrame) -> pd.DataFrame:
+    """Primary config, per budget and size: Friedman test over the combos of that size (FP@K
+    seed means, 15 datasets as blocks) and the Nemenyi CD (thesis.e1_figures, alpha 0.05).
+    n_within_cd = combos whose average rank is less than CD above the lowest one. Sizes with
+    fewer than 3 combos (a subset run) are skipped: the test needs at least 3."""
+    calib, agg = fusion.PRIMARY
+    prim = per_ds[(per_ds.calib == calib) & (per_ds["agg"] == agg)]
+    rows = []
+    for (b, size), g in prim.groupby(["budget", "size"], sort=True):
+        if g.combo.nunique() < 3:
+            continue
+        r = e1_figures.friedman_nemenyi(g, "fp_at_k", b, item="combo")
+        ranks = r["avg_ranks"]                       # ascending
+        top = next(iter(ranks))
+        rows.append({"budget": b, "size": size, "calib": calib, "agg": agg,
+                     "n_datasets": r["n_datasets"], "n_combos": r["k_detectors"],
+                     "friedman_chi2": r["friedman_chi2"], "friedman_p": r["friedman_p"],
+                     "iman_davenport_F": r["iman_davenport_F"],
+                     "iman_davenport_p": r["iman_davenport_p"], "alpha": r["alpha"],
+                     "nemenyi_cd": r["cd"], "lowest_avg_rank_combo": top,
+                     "lowest_avg_rank": ranks[top], "highest_avg_rank": max(ranks.values()),
+                     "n_within_cd": sum(v - ranks[top] < r["cd"] for v in ranks.values())})
+    return pd.DataFrame(rows)
+
+
+def markdown(head: pd.DataFrame, summ: pd.DataFrame, meta: dict,
+             fried: pd.DataFrame | None = None) -> str:
     p = meta["protocol"]
     lines = ["# E2 summary: pairs and triples of detectors on the 15 ADBench sets", "",
              f"Commit `{meta['commit']}` · cache key `{meta['cache_key']}` · source `e2_runs.csv` · "
@@ -194,14 +227,16 @@ def markdown(head: pd.DataFrame, summ: pd.DataFrame, meta: dict) -> str:
              f"Primary fusion config: {fusion.PRIMARY[0]} + {fusion.PRIMARY[1]}.",
              "Seed means per dataset. Beats best / median = fewer false alarms at K than the "
              "best / median member (best chosen with test labels, an oracle reference). "
+             "Ties = exactly as many false alarms; loses = 1 − beats − ties. "
              "Δ/K = (FP@K ensemble − FP@K member) / K; negative = fewer false alarms.", "",
              "## How often an ensemble beats its members (share of combo × dataset cells)", "",
-             "| Budget | Size | Calibration | Aggregation | beats best | beats median "
-             "| median Δ/K vs best | median Δ/K vs median |",
-             "|---|---|---|---|---|---|---|---|"]
+             "| Budget | Size | Calibration | Aggregation | beats best | ties best "
+             "| beats median | ties median | median Δ/K vs best | median Δ/K vs median |",
+             "|---|---|---|---|---|---|---|---|---|---|"]
     for r in head.itertuples():
         lines.append(f"| {r.budget:.0%} | {r.size} | {r.calib} | {r.agg} | "
-                     f"{r.share_beats_best:.3f} | {r.share_beats_median:.3f} | "
+                     f"{r.share_beats_best:.3f} | {r.share_ties_best:.3f} | "
+                     f"{r.share_beats_median:.3f} | {r.share_ties_median:.3f} | "
                      f"{r.median_delta_fp_best_rel:+.4f} | {r.median_delta_fp_median_rel:+.4f} |")
     calib, agg = fusion.PRIMARY
     for b, g in summ[(summ["size"] == 3) & (summ.calib == calib) & (summ["agg"] == agg)].groupby(
@@ -215,34 +250,59 @@ def markdown(head: pd.DataFrame, summ: pd.DataFrame, meta: dict) -> str:
                          f"{r.mean_pr_auc:.3f} | {r.n_beats_best}/{r.n_datasets} | "
                          f"{r.n_beats_median}/{r.n_datasets} | {r.mean_train_spearman:.3f} | "
                          f"{r.mean_train_jaccard:.3f} |")
+        sel = fried[(fried.budget == b) & (fried["size"] == 3)] if fried is not None and len(fried) else None
+        if sel is not None and len(sel):
+            f = sel.iloc[0]
+            lines += ["", f"Friedman test over the {f.n_combos} triples ({f.n_datasets} datasets): "
+                          f"χ² = {f.friedman_chi2:.2f}, p = {f.friedman_p:.3f} "
+                          f"(Iman-Davenport p = {f.iman_davenport_p:.3f}); Nemenyi CD = "
+                          f"{f.nemenyi_cd:.2f} at α = {f.alpha}; {f.n_within_cd} of "
+                          f"{f.n_combos} triples lie within CD of the lowest average rank. "
+                          "Not significant means the triples cannot be told apart on these "
+                          "datasets: the top row has the lowest average rank, it is not shown "
+                          "to be better."]
+    if fried is not None and len(fried):
+        lines += ["", f"## Friedman tests over the combos of one size, {calib} + {agg}", "",
+                  "| Budget | Size | combos | χ² | p | Iman-Davenport p | Nemenyi CD "
+                  "| lowest avg rank | within CD |",
+                  "|---|---|---|---|---|---|---|---|---|"]
+        for f in fried.itertuples():
+            lines.append(f"| {f.budget:.0%} | {f.size} | {f.n_combos} | {f.friedman_chi2:.2f} | "
+                         f"{f.friedman_p:.3f} | {f.iman_davenport_p:.3f} | {f.nemenyi_cd:.2f} | "
+                         f"{f.lowest_avg_rank_combo} ({f.lowest_avg_rank:.2f}) | "
+                         f"{f.n_within_cd}/{f.n_combos} |")
     return "\n".join(lines) + "\n"
 
 
 def members_match_e1(runs: pd.DataFrame, e1_runs: pd.DataFrame) -> float:
-    """Largest |difference| between the member FP@K used here and E1's single-detector FP@K
-    (via the best member of each pair); 0 when both come from the same scores."""
+    """Largest |difference| between the member FP@K used here and E1's single-detector FP@K,
+    via the best member and the median (= mean of the two) of each pair, which together pin
+    both members; 0 when both come from the same scores."""
     key = ["dataset", "seed", "budget"]
     e1 = e1_runs.set_index([*key, "detector"])["fp_at_k"]
     pairs = runs[(runs["size"] == 2) & (runs.calib == fusion.PRIMARY[0])
                  & (runs["agg"] == fusion.PRIMARY[1])]
     worst = 0.0
     for r in pairs.itertuples():
-        e1_best = min(e1[(r.dataset, r.seed, r.budget, d)] for d in r.combo.split(SEP))
-        worst = max(worst, abs(e1_best - r.fp_best_member))
+        e1_fps = [e1[(r.dataset, r.seed, r.budget, d)] for d in r.combo.split(SEP)]
+        worst = max(worst, abs(min(e1_fps) - r.fp_best_member),
+                    abs(float(np.mean(e1_fps)) - r.fp_median_member))
     return worst
 
 
-def write(runs: pd.DataFrame, out, meta: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
+def write(runs: pd.DataFrame, out, meta: dict) -> tuple[pd.DataFrame, ...]:
+    """Tables; returns (per_dataset, summary, headline, friedman)."""
     out.mkdir(parents=True, exist_ok=True)
     runs.to_csv(out / "e2_runs.csv", index=False)
     (out / "e2_runs.meta.json").write_text(json.dumps(meta, indent=1) + "\n", encoding="utf-8")
     per_ds = per_dataset(runs)
-    summ, head = summary(per_ds), headline(per_ds)
+    summ, head, fried = summary(per_ds), headline(per_ds), friedman(per_ds)
     per_ds.assign(commit=meta["commit"]).to_csv(out / "e2_per_dataset.csv", index=False)
     summ.assign(commit=meta["commit"]).to_csv(out / "e2_summary.csv", index=False)
     head.assign(commit=meta["commit"]).to_csv(out / "e2_headline.csv", index=False)
-    (out / "e2_summary.md").write_text(markdown(head, summ, meta), encoding="utf-8")
-    return summ, head
+    fried.assign(commit=meta["commit"]).to_csv(out / "e2_friedman.csv", index=False)
+    (out / "e2_summary.md").write_text(markdown(head, summ, meta, fried), encoding="utf-8")
+    return per_ds, summ, head, fried
 
 
 def main(argv: list[str]) -> None:
@@ -278,9 +338,14 @@ def main(argv: list[str]) -> None:
         "note": "best member chosen per run with test labels (oracle reference, ADBench only); "
                 "overlap from training scores only",
     }
+    from thesis import e2_figures              # imports this module
     out = out_dir(protocol, OUT)
-    summ, head = write(runs, out, meta)
+    per_ds, summ, head, fried = write(runs, out, meta)
+    fig_dir = out_dir(protocol, e2_figures.FIG_OUT)
+    e2_figures.write(per_ds, summ, fried, fig_dir, out, meta)
     print(head.to_string(index=False))
+    print(fried.to_string(index=False))
+    print("figures:", fig_dir)
     print("member FP@K vs E1, max |diff|:", meta["max_abs_diff_member_fp_vs_e1"])
     print("wrote", out, len(runs), "rows + summary")
 
