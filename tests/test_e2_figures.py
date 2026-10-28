@@ -53,6 +53,17 @@ def test_overlap_gain_rho_sign_and_within_dataset():
     assert -1 < st.loc[("train_jaccard", "best"), "rho_pooled"] < 0
 
 
+def test_overlap_gain_stats_ignore_float_noise(tables):
+    """A CSV round trip can move values by 1 ulp; exact ties must stay ties."""
+    per_ds, _, _ = tables
+    noisy = per_ds.copy()
+    rng = np.random.default_rng(5)
+    for c in ("delta_fp_best_rel", "delta_fp_median_rel", "train_jaccard", "train_spearman"):
+        noisy[c] = noisy[c] + rng.choice([-1, 0, 1], len(noisy)) * 1e-13
+    ref = e2_figures.overlap_gain_stats(e2_figures.primary(per_ds))
+    pd.testing.assert_frame_equal(ref, e2_figures.overlap_gain_stats(e2_figures.primary(noisy)))
+
+
 def test_pair_matrix_is_symmetric_with_empty_diagonal(tables):
     per_ds, _, _ = tables
     pg = e2_figures.pair_gain(e2_figures.primary(per_ds))

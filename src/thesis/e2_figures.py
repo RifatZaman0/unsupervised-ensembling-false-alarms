@@ -51,14 +51,17 @@ E_LIT = combo_name(("IForest", "PCA", "KNN"))          # Master Plan: the publis
 PAIR_COLOR, TRIPLE_COLOR = "#2a78d6", "#eb6834"         # categorical slots 1, 2
 E_LIT_COLOR, OTHER_COLOR = "#2a78d6", "#a3a29b"    # highlight one, the rest muted
 INK, MUTED = "#0b0b0b", "#6b6a64"
+# Overlap and gain are rounded before ranking: exact ties (common, see the tie shares) must not
+# be broken by 1-ulp float noise, e.g. from a CSV round trip (pandas read_csv is not bit-exact).
+TIE_DECIMALS = 9
 
 
 def primary(per_ds: pd.DataFrame) -> pd.DataFrame:
     """Primary-config rows with gain columns (false alarms saved per 100 alerts)."""
     calib, agg = fusion.PRIMARY
     df = per_ds[(per_ds.calib == calib) & (per_ds["agg"] == agg)].copy()
-    df["gain_best"] = -100 * df["delta_fp_best_rel"]
-    df["gain_median"] = -100 * df["delta_fp_median_rel"]
+    df["gain_best"] = (-100 * df["delta_fp_best_rel"]).round(TIE_DECIMALS)
+    df["gain_median"] = (-100 * df["delta_fp_median_rel"]).round(TIE_DECIMALS)
     return df
 
 
@@ -70,7 +73,7 @@ def overlap_gain_stats(prim: pd.DataFrame) -> pd.DataFrame:
         for ov in ("train_jaccard", "train_spearman"):
             for ref in ("best", "median"):
                 y = f"gain_{ref}"
-                d = g[["dataset", ov, y]].dropna()
+                d = g[["dataset", ov, y]].dropna().round({ov: TIE_DECIMALS, y: TIE_DECIMALS})
                 rho, p = stats.spearmanr(d[ov], d[y])
                 within = pd.Series({ds: spearman(h[ov].to_numpy(), h[y].to_numpy())
                                     for ds, h in d.groupby("dataset")}).dropna()
