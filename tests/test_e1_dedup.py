@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from thesis import data, e1_dedup, e1_summary
+from thesis import config, data, e1_dedup, e1_summary
 
 DETS = ("A", "B", "C")
 
@@ -81,6 +81,30 @@ def test_unchanged_dataset_that_differs_is_flagged():
     dedup = {**MAIN, "d2": {"A": 9, "B": 3, "C": 2}}   # nothing removed but different results
     _, _, (s,) = e1_dedup.compare(per_ds(MAIN, n), per_ds(dedup, n), NONE_REMOVED)
     assert not s["unchanged_datasets_identical"]
+
+
+def test_unchanged_dataset_with_different_pr_auc_is_flagged():
+    n = {"d1": 100, "d2": 50, "d3": 50}
+    dedup = per_ds(MAIN, n)
+    dedup.loc[dedup.dataset == "d2", "pr_auc"] += 0.01   # same FP@K, different PR-AUC
+    _, ds, (s,) = e1_dedup.compare(per_ds(MAIN, n), dedup, NONE_REMOVED)
+    assert not s["unchanged_datasets_identical"]
+    assert list(ds.dataset[~ds.identical]) == ["d2"]
+
+
+def test_rows_removed_per_dataset_restores_the_protocol(monkeypatch):
+    seen = []
+    monkeypatch.setattr(data, "load_adbench",
+                        lambda n: seen.append(config.PROTOCOL.adbench_dedup)
+                        or (np.zeros((3, 1)), np.array([0, 0, 1])))
+    old = config.PROTOCOL
+    config.use(config.Protocol(adbench_dedup=True))
+    try:
+        assert e1_dedup.rows_removed_per_dataset(["d1"]) == {"d1": 1}   # (0, 0) twice
+        assert seen == [False]                      # raw files read with duplicates kept
+        assert config.PROTOCOL.adbench_dedup        # caller's protocol back
+    finally:
+        config.use(old)
 
 
 def test_rows_removed_with_same_n_test_counts_as_changed():
