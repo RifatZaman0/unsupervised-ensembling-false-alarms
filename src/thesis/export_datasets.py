@@ -2,7 +2,8 @@
 
     python -m thesis.export_datasets
 
-Descriptive statistics only (rows, features, label counts per split); no detector is run.
+Descriptive statistics only (rows, features, label counts per split, exact duplicates per
+ADBench set); no detector is run.
 """
 from __future__ import annotations
 
@@ -52,11 +53,22 @@ def main() -> None:
                  "anomalies_train": int(s.y_train.sum()), "anomalies_test": int(s.y_test.sum())})
     pd.DataFrame(rows).to_csv(OUT / "datasets.csv", index=False)
 
+    dups = []
+    for name in sorted(data.ADBENCH_15, key=str.lower):
+        st = data.duplicate_stats(*data.load_adbench(name))
+        dups.append({"dataset": name, **st,
+                     "share_rows_in_dup_groups": st["rows_in_dup_groups"] / st["n_rows"],
+                     "share_rows_removed": st["rows_removed"] / st["n_rows"],
+                     "share_anomalies_removed": st["anomalies_removed"] / max(st["n_anomalies"], 1)})
+    pd.DataFrame(dups).to_csv(OUT / "duplicates.csv", index=False)
+
     (OUT / "datasets.meta.json").write_text(json.dumps({
         **state, "command": "python -m thesis.export_datasets",
         "created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "files": ["adbench_catalogue.csv", "datasets.csv"],
-        "note": "n_train/n_test for ADBench are for seed 0; all seeds have the same sizes",
+        "files": ["adbench_catalogue.csv", "datasets.csv", "duplicates.csv"],
+        "note": "n_train/n_test for ADBench are for seed 0; all seeds have the same sizes. "
+                "duplicates.csv: exact (features, label) duplicates in the distributed ADBench "
+                "files, which the main experiment keeps; rows_removed is what --dedup drops",
     }, indent=1) + "\n", encoding="utf-8")
     print("wrote", OUT)
 
