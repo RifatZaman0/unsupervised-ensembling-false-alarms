@@ -33,9 +33,14 @@ DEDUP_DIR = out_dir(config.Protocol(adbench_dedup=True))
 
 
 def rows_removed_per_dataset(datasets) -> dict[str, int]:
-    """Rows that --dedup drops per dataset, from the raw files (duplicates kept on load)."""
+    """Rows that --dedup drops per dataset, from the raw files (duplicates kept on load).
+    The caller's protocol is restored afterwards."""
+    old = config.PROTOCOL
     config.use(config.Protocol())
-    return {n: data.duplicate_stats(*data.load_adbench(n))["rows_removed"] for n in datasets}
+    try:
+        return {n: data.duplicate_stats(*data.load_adbench(n))["rows_removed"] for n in datasets}
+    finally:
+        config.use(old)
 
 
 def compare(main_pd: pd.DataFrame, dedup_pd: pd.DataFrame,
@@ -52,8 +57,9 @@ def compare(main_pd: pd.DataFrame, dedup_pd: pd.DataFrame,
     det = det.sort_values(["budget", "avg_rank_fp_at_k_main", "detector"], ignore_index=True)
 
     key = ["dataset", "budget", "detector"]
-    both = main_pd[[*key, "rank_fp_at_k", "fp_at_k", "n_test"]].merge(
-        dedup_pd[[*key, "rank_fp_at_k", "fp_at_k", "n_test"]], on=key, suffixes=("_main", "_dedup"))
+    cmp_cols = ["rank_fp_at_k", "fp_at_k", "pr_auc", "n_test"]
+    both = main_pd[[*key, *cmp_cols]].merge(dedup_pd[[*key, *cmp_cols]], on=key,
+                                            suffixes=("_main", "_dedup"))
     ds_rows = []
     for (ds, b), g in both.groupby(["dataset", "budget"], sort=True):
         best = lambda col: sorted(g.detector[g[col] == g[col].min()])
@@ -65,6 +71,7 @@ def compare(main_pd: pd.DataFrame, dedup_pd: pd.DataFrame,
                         "best_main": "/".join(best("rank_fp_at_k_main")),
                         "best_dedup": "/".join(best("rank_fp_at_k_dedup")),
                         "identical": bool((g.fp_at_k_main == g.fp_at_k_dedup).all()
+                                          and (g.pr_auc_main == g.pr_auc_dedup).all()
                                           and (g.n_test_main == g.n_test_dedup).all())})
     per_ds = pd.DataFrame(ds_rows)
     per_ds["best_changed"] = per_ds.best_main != per_ds.best_dedup
