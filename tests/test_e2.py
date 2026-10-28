@@ -89,6 +89,7 @@ def test_gain_against_best_and_median_member():
                                r.calib, r.agg)
         assert r.fp_at_k == pytest.approx(metrics.budget_metrics(fused, y, r.budget)["fp_at_k"])
         assert r.delta_fp_best == pytest.approx(r.fp_at_k - min(fps))
+        assert r.delta_fp_best_rel == pytest.approx((r.fp_at_k - min(fps)) / r.k)
         assert r.delta_fp_median_rel == pytest.approx((r.fp_at_k - np.median(fps)) / r.k)
 
 
@@ -131,6 +132,44 @@ def test_per_dataset_ranks_within_size_and_summary_counts():
     assert head.loc[2, "share_beats_best"] == 0.5 and head.loc[2, "n_cells"] == 4
 
 
+def test_beats_is_strict_on_seed_means_and_ties_are_counted():
+    """One combo, two seeds: seed 0 beats its best member (-1), seed 1 loses (+3), so the seed
+    mean (+1) does not beat it; both seeds equal the median member exactly (a tie, not a win)."""
+    r0 = runs_frame().iloc[[0]].assign(delta_fp_best=-1.0, delta_fp_median=0.0)
+    r1 = r0.assign(seed=1, delta_fp_best=3.0)
+    per_ds = e2.per_dataset(pd.concat([r0, r1], ignore_index=True))
+    assert len(per_ds) == 1
+    row = per_ds.iloc[0]
+    assert row.share_runs_beats_best == 0.5 and not row.beats_best and not row.ties_best
+    assert not row.beats_median and row.ties_median
+    head = e2.headline(per_ds).iloc[0]
+    assert head.share_beats_median == 0 and head.share_ties_median == 1
+    assert head.share_beats_best == 0 and head.share_ties_best == 0
+
+
+def test_friedman_over_combos_of_one_size():
+    from scipy import stats
+    rng = np.random.default_rng(3)
+    rows = []
+    for ds in ("d1", "d2", "d3", "d4"):
+        for b in metrics.ADBENCH_BUDGETS:
+            for c in ("X", "Y", "Z"):
+                rows.append({"dataset": ds, "budget": b, "size": 2, "calib": fusion.PRIMARY[0],
+                             "agg": fusion.PRIMARY[1], "combo": c,
+                             "fp_at_k": {"X": 1.0, "Y": 5.0}.get(c, rng.uniform(2, 9))})
+            rows.append({**rows[-1], "calib": "percentile", "fp_at_k": 0.0})   # other config
+    per_ds = pd.DataFrame(rows)
+    fr = e2.friedman(per_ds)
+    assert len(fr) == len(metrics.ADBENCH_BUDGETS) and set(fr["size"]) == {2}
+    prim = per_ds[per_ds.calib == fusion.PRIMARY[0]]
+    for f in fr.itertuples():
+        w = prim[prim.budget == f.budget].pivot(index="dataset", columns="combo", values="fp_at_k")
+        chi2, p = stats.friedmanchisquare(*(w[c] for c in w.columns))
+        assert f.friedman_chi2 == pytest.approx(chi2) and f.friedman_p == pytest.approx(p)
+        assert f.lowest_avg_rank_combo == "X" and f.lowest_avg_rank == 1.0
+        assert f.n_combos == 3 and f.n_datasets == 4
+
+
 def test_members_match_e1():
     train, test, y = scores()
     rows = []
@@ -141,18 +180,23 @@ def test_members_match_e1():
                         "fp_at_k": metrics.budget_metrics(test[d], y, b)["fp_at_k"]}
                        for s in (0, 1) for b in metrics.ADBENCH_BUDGETS for d in ("A", "B")])
     assert e2.members_match_e1(runs, e1) == 0
+    worse = e1.copy()                       # change only the worse member: the best is unchanged
+    i = worse[(worse.seed == 0) & (worse.budget == worse.budget.min())]["fp_at_k"].idxmax()
+    worse.loc[i, "fp_at_k"] += 3
+    assert e2.members_match_e1(runs, worse) > 0
     e1.loc[0, "fp_at_k"] -= 3
     assert e2.members_match_e1(runs, e1) > 0
 
 
 def test_write_names_the_commit_everywhere(tmp_path):
     train, test, y = scores()
-    runs = pd.DataFrame(e2.run_split(train, test, y, BASE, COMBOS))
+    combos = (("A", "B"), ("A", "C"), ("B", "C"), ("A", "B", "C"))   # 3 pairs: Friedman runs
+    runs = pd.DataFrame(e2.run_split(train, test, y, BASE, combos))
     meta = {"commit": "c0ffee1", "created_utc": "t", "cache_key": "k",
             "protocol": {"zscore_inputs": True, "k_rule": "ceil", "pca_drop_zero_variance": True,
                          "adbench_dedup": False}}
     e2.write(runs, tmp_path, meta)
-    for f in ("e2_per_dataset.csv", "e2_summary.csv", "e2_headline.csv"):
+    for f in ("e2_per_dataset.csv", "e2_summary.csv", "e2_headline.csv", "e2_friedman.csv"):
         assert set(pd.read_csv(tmp_path / f)["commit"]) == {"c0ffee1"}
     assert "c0ffee1" in (tmp_path / "e2_summary.md").read_text(encoding="utf-8")
     assert json.loads((tmp_path / "e2_runs.meta.json").read_text())["commit"] == "c0ffee1"

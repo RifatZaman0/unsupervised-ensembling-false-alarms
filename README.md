@@ -46,7 +46,9 @@ set PYTHONPATH=src            (PowerShell: $env:PYTHONPATH="src")
 .venv\Scripts\python.exe -m thesis.e1_dedup    # then ranks compared with the main E1 (variants/dedup/dedup_vs_main.*)
 .venv\Scripts\python.exe -m thesis.e2          # E2: 15 pairs + 20 triples x 6 fusion configs from the score cache
                                                # -> results/tables/e2/ (runs, per dataset, summary, headline,
-                                               # triple ranking in e2_summary.md); same switches as thesis.e1
+                                               # Friedman tests, triple ranking in e2_summary.md) and the figures
+                                               # in results/figures/e2/; same switches as thesis.e1
+.venv\Scripts\python.exe -m thesis.e2_figures  # rebuild only the E2 figures and e2_triples.tex from the E2 tables
 ```
 
 - `detectors.score(name, X_fit, X_score, seed)` → (training scores, new-row scores); PyOD defaults, inputs
@@ -59,7 +61,8 @@ set PYTHONPATH=src            (PowerShell: $env:PYTHONPATH="src")
   expectation, so row order never decides an alert.
 - E2 overlap (Spearman rho, top-K Jaccard) uses training scores only; the best member of a combo is chosen
   with test labels (an oracle reference, ADBench only). Percentile calibration maps every test score above the
-  training maximum to 1.0, so it can create ties at the top of the fused score.
+  training maximum to 1.0, so it can create ties at the top of the fused score. "Beats" is strict; exact ties
+  with a member are frequent, so the headline reports beats and ties (loses = the rest).
 - The cache folder name is a hash of detector parameters, preprocessing and PyOD version (`scorecache.cache_key`).
 
 ## Layout
