@@ -5,7 +5,9 @@ Built from the two e1_per_dataset.csv files only (no scoring). Compared per budg
 average FP@K and PR-AUC ranks of the six detectors, the Kendall tau between the two rank
 orders, the Friedman p-values, and per dataset whether the detector ranking (Spearman) and the
 best detector stay the same. FP@K values themselves are not compared one to one: removing rows
-changes n_test and so K. Datasets without duplicates must come out identical, which is checked.
+changes the split and usually n_test and K. A dataset counts as changed when dedup removes at
+least one row (not when n_test changes: letter loses 2 rows and keeps n_test = 640). Datasets
+with nothing removed must come out identical, which is checked.
 
     python -m thesis.e1 --dedup      # first, writes tables/e1/variants/dedup/
     python -m thesis.e1_dedup
@@ -23,15 +25,24 @@ from datetime import datetime, timezone
 import pandas as pd
 from scipy import stats
 
-from thesis import config, e1_figures, e1_summary
+from thesis import config, data, e1_figures, e1_summary
 from thesis.e1 import OUT, out_dir
 from thesis.export_datasets import git_state
 
 DEDUP_DIR = out_dir(config.Protocol(adbench_dedup=True))
 
 
-def compare(main_pd: pd.DataFrame, dedup_pd: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, list]:
-    """(detector x budget table, dataset x budget table, per-budget summaries)."""
+def rows_removed_per_dataset(datasets) -> dict[str, int]:
+    """Rows that --dedup drops per dataset, from the raw files (duplicates kept on load)."""
+    config.use(config.Protocol())
+    return {n: data.duplicate_stats(*data.load_adbench(n))["rows_removed"] for n in datasets}
+
+
+def compare(main_pd: pd.DataFrame, dedup_pd: pd.DataFrame,
+            rows_removed: dict[str, int]) -> tuple[pd.DataFrame, pd.DataFrame, list]:
+    """(detector x budget table, dataset x budget table, per-budget summaries).
+
+    rows_removed: rows dropped by --dedup per dataset; 0 means the dataset is unchanged."""
     sm, sd = e1_summary.summary(main_pd), e1_summary.summary(dedup_pd)
     cols = ["avg_rank_fp_at_k", "avg_rank_pr_auc", "n_best_fp_at_k", "mean_fp_at_k", "mean_pr_auc"]
     det = sm[["budget", "detector", *cols]].merge(sd[["budget", "detector", *cols]],
@@ -47,7 +58,7 @@ def compare(main_pd: pd.DataFrame, dedup_pd: pd.DataFrame) -> tuple[pd.DataFrame
     for (ds, b), g in both.groupby(["dataset", "budget"], sort=True):
         best = lambda col: sorted(g.detector[g[col] == g[col].min()])
         rho = stats.spearmanr(g.rank_fp_at_k_main, g.rank_fp_at_k_dedup)[0]
-        ds_rows.append({"dataset": ds, "budget": b,
+        ds_rows.append({"dataset": ds, "budget": b, "rows_removed": int(rows_removed.get(ds, 0)),
                         "n_test_main": int(g.n_test_main.iloc[0]),
                         "n_test_dedup": int(g.n_test_dedup.iloc[0]),
                         "spearman_ranks": float(rho),  # NaN if one side has all ranks tied
@@ -64,7 +75,7 @@ def compare(main_pd: pd.DataFrame, dedup_pd: pd.DataFrame) -> tuple[pd.DataFrame
         fd = e1_figures.friedman_nemenyi(dedup_pd, "fp_at_k", b)
         tau = stats.kendalltau(g.avg_rank_fp_at_k_main, g.avg_rank_fp_at_k_dedup)[0]
         p = per_ds[per_ds.budget == b]
-        changed = p[p.n_test_main != p.n_test_dedup]
+        changed = p[p.rows_removed > 0]
         summaries.append({
             "budget": b, "kendall_tau_avg_rank_fp_at_k": float(tau),
             "top_main": min(fm["avg_ranks"], key=fm["avg_ranks"].get),
@@ -74,7 +85,7 @@ def compare(main_pd: pd.DataFrame, dedup_pd: pd.DataFrame) -> tuple[pd.DataFrame
             "max_abs_delta_avg_rank": float(g.delta_avg_rank_fp_at_k.abs().max()),
             "datasets_changed_by_dedup": sorted(changed.dataset),
             "datasets_best_changed": sorted(p.dataset[p.best_changed]),
-            "unchanged_datasets_identical": bool(p[p.n_test_main == p.n_test_dedup].identical.all())})
+            "unchanged_datasets_identical": bool(p[p.rows_removed == 0].identical.all())})
     return det, per_ds, summaries
 
 
@@ -104,7 +115,8 @@ def markdown(det: pd.DataFrame, summaries: list, meta: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
-def write(main_dir, dedup_dir, meta: dict) -> tuple[pd.DataFrame, pd.DataFrame, list]:
+def write(main_dir, dedup_dir, meta: dict,
+          rows_removed: dict[str, int]) -> tuple[pd.DataFrame, pd.DataFrame, list]:
     src = {}
     for tag, d in (("main", main_dir), ("dedup", dedup_dir)):
         m = json.loads((d / "e1_runs.meta.json").read_text(encoding="utf-8"))
@@ -112,7 +124,7 @@ def write(main_dir, dedup_dir, meta: dict) -> tuple[pd.DataFrame, pd.DataFrame, 
             raise ValueError(f"{d}: expected a clean {tag} E1 run, got {m['protocol']}")
         src[tag] = m
     det, per_ds, summaries = compare(pd.read_csv(main_dir / "e1_per_dataset.csv"),
-                                     pd.read_csv(dedup_dir / "e1_per_dataset.csv"))
+                                     pd.read_csv(dedup_dir / "e1_per_dataset.csv"), rows_removed)
     meta = {**meta, "commit_main": src["main"]["commit"], "commit_dedup": src["dedup"]["commit"],
             "cache_key_main": src["main"]["cache_key"], "cache_key_dedup": src["dedup"]["cache_key"]}
     det.assign(commit=meta["commit"]).to_csv(dedup_dir / "dedup_vs_main.csv", index=False)
@@ -130,7 +142,7 @@ def main(argv: list[str]) -> None:
         raise SystemExit("Working tree has uncommitted changes; commit before writing results.")
     meta = {**state, "command": " ".join(["python -m thesis.e1_dedup", *argv]),
             "created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds")}
-    write(OUT, DEDUP_DIR, meta)
+    write(OUT, DEDUP_DIR, meta, rows_removed_per_dataset(data.ADBENCH_15))
     print((DEDUP_DIR / "dedup_vs_main.md").read_text(encoding="utf-8"))
     print("wrote", DEDUP_DIR)
 

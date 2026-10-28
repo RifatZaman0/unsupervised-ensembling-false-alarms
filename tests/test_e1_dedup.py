@@ -51,12 +51,14 @@ def per_ds(fp: dict, n_test: dict, budget=0.05) -> pd.DataFrame:
 
 MAIN = {"d1": {"A": 1, "B": 2, "C": 3}, "d2": {"A": 1, "B": 3, "C": 2},
         "d3": {"A": 2, "B": 1, "C": 3}}
+NONE_REMOVED = {"d1": 0, "d2": 0, "d3": 0}
 
 
 def test_compare_finds_changes_and_identical_unchanged_sets():
     dedup = {**MAIN, "d1": {"A": 3, "B": 2, "C": 1}}   # dedup flips d1 only
     det, ds, (s,) = e1_dedup.compare(per_ds(MAIN, {"d1": 100, "d2": 50, "d3": 50}),
-                                     per_ds(dedup, {"d1": 80, "d2": 50, "d3": 50}))
+                                     per_ds(dedup, {"d1": 80, "d2": 50, "d3": 50}),
+                                     {"d1": 50, "d2": 0, "d3": 0})
     assert s["datasets_changed_by_dedup"] == ["d1"]
     assert s["datasets_best_changed"] == ["d1"]
     assert s["unchanged_datasets_identical"]
@@ -69,16 +71,25 @@ def test_compare_finds_changes_and_identical_unchanged_sets():
 
 def test_same_input_gives_tau_one():
     n = {"d1": 100, "d2": 50, "d3": 50}
-    _, ds, (s,) = e1_dedup.compare(per_ds(MAIN, n), per_ds(MAIN, n))
+    _, ds, (s,) = e1_dedup.compare(per_ds(MAIN, n), per_ds(MAIN, n), NONE_REMOVED)
     assert s["kendall_tau_avg_rank_fp_at_k"] == pytest.approx(1.0)
     assert s["friedman_p_main"] == s["friedman_p_dedup"] and not ds.best_changed.any()
 
 
 def test_unchanged_dataset_that_differs_is_flagged():
     n = {"d1": 100, "d2": 50, "d3": 50}
-    dedup = {**MAIN, "d2": {"A": 9, "B": 3, "C": 2}}   # same n_test but different results
-    _, _, (s,) = e1_dedup.compare(per_ds(MAIN, n), per_ds(dedup, n))
+    dedup = {**MAIN, "d2": {"A": 9, "B": 3, "C": 2}}   # nothing removed but different results
+    _, _, (s,) = e1_dedup.compare(per_ds(MAIN, n), per_ds(dedup, n), NONE_REMOVED)
     assert not s["unchanged_datasets_identical"]
+
+
+def test_rows_removed_with_same_n_test_counts_as_changed():
+    # like letter: 2 rows removed, n_test still rounds to the same value
+    n = {"d1": 100, "d2": 50, "d3": 50}
+    dedup = {**MAIN, "d2": {"A": 9, "B": 3, "C": 2}}
+    _, _, (s,) = e1_dedup.compare(per_ds(MAIN, n), per_ds(dedup, n), {"d1": 0, "d2": 2, "d3": 0})
+    assert s["datasets_changed_by_dedup"] == ["d2"]
+    assert s["unchanged_datasets_identical"]
 
 
 def write_run(d, dedup: bool, fp, n):
@@ -93,9 +104,11 @@ def test_write_records_both_source_commits_and_refuses_wrong_protocol(tmp_path):
     n = {"d1": 100, "d2": 50, "d3": 50}
     write_run(tmp_path / "main", False, MAIN, n)
     write_run(tmp_path / "dedup", True, MAIN, n)
-    e1_dedup.write(tmp_path / "main", tmp_path / "dedup", {"commit": "c0ffee1", "created_utc": "t"})
+    e1_dedup.write(tmp_path / "main", tmp_path / "dedup", {"commit": "c0ffee1", "created_utc": "t"},
+                   NONE_REMOVED)
     meta = json.loads((tmp_path / "dedup" / "dedup_vs_main.meta.json").read_text())
     assert (meta["commit_main"], meta["commit_dedup"], meta["commit"]) == ("a1a1a1a", "dedc0de", "c0ffee1")
     assert set(pd.read_csv(tmp_path / "dedup" / "dedup_vs_main.csv")["commit"]) == {"c0ffee1"}
     with pytest.raises(ValueError):
-        e1_dedup.write(tmp_path / "dedup", tmp_path / "main", {"commit": "x", "created_utc": "t"})
+        e1_dedup.write(tmp_path / "dedup", tmp_path / "main", {"commit": "x", "created_utc": "t"},
+                       NONE_REMOVED)
