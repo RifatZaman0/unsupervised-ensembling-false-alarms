@@ -44,6 +44,9 @@ set PYTHONPATH=src            (PowerShell: $env:PYTHONPATH="src")
                                                # non-default runs go to results/tables/e1/variants/<switches>/
 .venv\Scripts\python.exe -m thesis.e1 --dedup  # duplicate robustness check: E1 without exact duplicates,
 .venv\Scripts\python.exe -m thesis.e1_dedup    # then ranks compared with the main E1 (variants/dedup/dedup_vs_main.*)
+.venv\Scripts\python.exe -m thesis.e2          # E2: 15 pairs + 20 triples x 6 fusion configs from the score cache
+                                               # -> results/tables/e2/ (runs, per dataset, summary, headline,
+                                               # triple ranking in e2_summary.md); same switches as thesis.e1
 ```
 
 - `detectors.score(name, X_fit, X_score, seed)` → (training scores, new-row scores); PyOD defaults, inputs
@@ -54,6 +57,9 @@ set PYTHONPATH=src            (PowerShell: $env:PYTHONPATH="src")
   on training scores only. Primary: min-max + mean.
 - `metrics`: FP@K, Precision@K, Recall@K with K = ceil(budget × n_test); ties at the K-th score are split in
   expectation, so row order never decides an alert.
+- E2 overlap (Spearman rho, top-K Jaccard) uses training scores only; the best member of a combo is chosen
+  with test labels (an oracle reference, ADBench only). Percentile calibration maps every test score above the
+  training maximum to 1.0, so it can create ties at the top of the fused score.
 - The cache folder name is a hash of detector parameters, preprocessing and PyOD version (`scorecache.cache_key`).
 
 ## Layout
