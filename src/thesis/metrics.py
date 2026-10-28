@@ -15,17 +15,44 @@ import math
 import numpy as np
 from sklearn.metrics import average_precision_score, roc_auc_score
 
+from thesis import config
+
 ADBENCH_BUDGETS = (0.02, 0.05)
 
 
-def budget_k(budget: float, n: int) -> int:
-    """Number of alerts for a budget given as a share of the rows (at least 1)."""
-    return max(1, math.ceil(round(budget * n, 9)))
+def budget_k(budget: float, n: int, rule: str | None = None) -> int:
+    """Number of alerts for a budget given as a share of the rows (at least 1).
+
+    rule: 'ceil' / 'round' (half up) / 'floor'; default config.PROTOCOL.k_rule.
+    """
+    x = round(budget * n, 9)  # 7.000000000000001 must count as 7
+    rule = rule or config.PROTOCOL.k_rule
+    if rule == "ceil":
+        k = math.ceil(x)
+    elif rule == "round":
+        k = math.floor(x + 0.5)
+    elif rule == "floor":
+        k = math.floor(x)
+    else:
+        raise ValueError(f"unknown k rule {rule!r}")
+    return max(1, k)
 
 
 def tp_at_k(scores: np.ndarray, y: np.ndarray, k: int) -> float:
-    """Expected true positives among the top k scores, ties broken at random."""
-    scores, y = np.asarray(scores, dtype=np.float64), np.asarray(y)
+    """Expected true positives among the top k scores, ties broken at random.
+
+    Raises ValueError for non-1-D or mismatched inputs, NaN in scores or labels, and k that is
+    not an integer in 1..n.
+    """
+    scores, y = np.asarray(scores, dtype=np.float64), np.asarray(y, dtype=np.float64)
+    if scores.ndim != 1 or y.ndim != 1 or len(scores) != len(y):
+        raise ValueError(f"scores {scores.shape} and y {y.shape} must be 1-D of equal length")
+    if np.isnan(scores).any():
+        raise ValueError(f"scores contain {int(np.isnan(scores).sum())} NaN value(s)")
+    if np.isnan(y).any():
+        raise ValueError(f"y contains {int(np.isnan(y).sum())} NaN value(s)")
+    if isinstance(k, (bool, np.bool_)) or not isinstance(k, (int, np.integer)):
+        raise ValueError(f"k must be an integer, got {k!r}")
     if not 1 <= k <= len(scores):
         raise ValueError(f"k={k} outside 1..{len(scores)}")
     kth = np.partition(scores, len(scores) - k)[len(scores) - k]

@@ -16,17 +16,24 @@ from pathlib import Path
 import numpy as np
 import pyod
 
-from thesis import detectors
+from thesis import config, detectors
 from thesis.data import Split
 from thesis.paths import CACHE
 
-PREPROCESSING = "zscore-train"  # thesis.data.standardize, statistics from the training split
+def preprocessing() -> str:
+    """Detector input under the current protocol (thesis.data.preprocess)."""
+    return "zscore-train" if config.PROTOCOL.zscore_inputs else "none"
 
 
 def cache_key() -> str:
-    spec = {"params": detectors.PARAMS, "max_fit_rows": detectors.MAX_FIT_ROWS,
-            "preprocessing": PREPROCESSING, "pyod": pyod.__version__,
+    """With the default protocol the spec is exactly the one used before thesis.config existed,
+    so the key (21ba8c24b9 for PyOD 3.6.7) and the cached scores stay valid. The K rule only
+    affects metrics and is not part of the key."""
+    spec = {"params": detectors.params(), "max_fit_rows": detectors.MAX_FIT_ROWS,
+            "preprocessing": preprocessing(), "pyod": pyod.__version__,
             "ecod": "train-only-v2"}
+    if config.PROTOCOL.adbench_dedup:
+        spec["adbench_dedup"] = True
     return hashlib.sha256(json.dumps(spec, sort_keys=True).encode()).hexdigest()[:10]
 
 

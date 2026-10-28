@@ -62,3 +62,22 @@ def test_ranking_metrics_match_sklearn_and_reward_higher_scores():
     assert ranking_metrics(np.array([0.9, 0.8, 0.2, 0.1]), y)["roc_auc"] == 0.0
     s = np.array([0.3, 0.1, 0.3, 0.7])
     assert ranking_metrics(s, y)["pr_auc"] == average_precision_score(y, s)
+
+
+@pytest.mark.parametrize("scores, y, k, match", [
+    (np.arange(5.0), np.zeros(4), 2, "equal length"),
+    (np.ones((3, 2)), np.zeros(3), 2, "1-D"),
+    (np.arange(5.0), np.zeros(5), 0, "outside"),
+    (np.arange(5.0), np.zeros(5), 6, "outside"),
+    (np.arange(5.0), np.zeros(5), 2.0, "integer"),
+    (np.arange(5.0), np.zeros(5), True, "integer"),
+    (np.array([1.0, np.nan, 3.0]), np.zeros(3), 1, "scores contain 1 NaN"),
+    (np.arange(3.0), np.array([0.0, np.nan, 1.0]), 1, "y contains 1 NaN"),
+])
+def test_tp_at_k_rejects_bad_input(scores, y, k, match):
+    with pytest.raises(ValueError, match=match):
+        tp_at_k(scores, y, k)
+
+
+def test_tp_at_k_accepts_numpy_k_and_int_labels():
+    assert tp_at_k(np.arange(4.0), np.array([0, 0, 1, 1]), np.int64(2)) == 2.0

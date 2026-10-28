@@ -68,6 +68,21 @@ def test_constant_training_scores_stay_finite(calib):
     assert np.isfinite(c.transform(np.array([1.0, 3.0, 7.0]))).all()
 
 
+def test_zero_variance_member_is_zero_under_zscore_and_warns(caplog):
+    """A constant member maps to 0 on train and test (even for test scores off its constant),
+    so the fused score equals that of the other members alone, and the warning names it."""
+    S_train, S_test = members(m=2)
+    S_train[:, 1], S_test[:, 1] = 4.0, np.linspace(0.0, 9.0, len(S_test))
+    with caplog.at_level("WARNING", logger="thesis.fusion"):
+        f_train, f_test = fuse(S_train, S_test, "zscore", "mean", members=["KNN", "HBOS"],
+                               dataset="cardio")
+    c = Calibrator.fit(S_train[:, 1], "zscore")
+    assert (c.transform(S_test[:, 1]) == 0).all()
+    alone_train, alone_test = fuse(S_train[:, :1], S_test[:, :1], "zscore", "mean")
+    assert np.allclose(f_train, alone_train / 2) and np.allclose(f_test, alone_test / 2)
+    assert "HBOS" in caplog.text and "cardio" in caplog.text and "KNN" not in caplog.text
+
+
 def test_mean_and_max_aggregate_calibrated_members():
     S_train = np.array([[0.0, 10.0], [1.0, 20.0]])
     S_test = np.array([[0.5, 20.0], [1.0, 10.0]])
