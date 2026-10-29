@@ -97,7 +97,8 @@ def hyperparameter_table() -> pd.DataFrame:
                     raise SystemExit(f"{det}.{k} = {v!r} is not the PyOD default "
                                      f"{defaults[k]!r}; add it to DEVIATIONS")
                 rows.append((det, k, v, defaults[k], "PyOD default", ""))
-    rows += [(det, k, v, d, "deviation", why) for det, k, v, d, why in DEVIATIONS]
+    rows += [(det, k, v, d, "stated (PyOD behaviour)" if d == "same" else "deviation", why)
+             for det, k, v, d, why in DEVIATIONS]
     return pd.DataFrame(rows, columns=["detector", "setting", "value", "pyod_default", "kind",
                                        "reason"]).astype(str)
 
@@ -129,8 +130,11 @@ def hardware() -> dict:
         m.dwLength = ctypes.sizeof(MemStatus)
         ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(m))
         ram_gb = round(m.ullTotalPhys / 2**30, 1)
+    release = platform.release()
+    if platform.system() == "Windows" and int(platform.version().split(".")[-1]) >= 22000:
+        release = "11"                      # platform.release() reports Windows 11 as "10"
     return {"cpu": cpu, "logical_cores": os.cpu_count(), "ram_gb": ram_gb,
-            "os": f"{platform.system()} {platform.release()} ({platform.version()})",
+            "os": f"{platform.system()} {release} ({platform.version()})",
             "n_jobs": 1}
 
 

@@ -15,6 +15,8 @@ def test_hyperparameters_are_defaults_or_listed_deviations():
     dev = hp[hp.kind == "deviation"]
     assert {"ECOD", "PCA", "IForest", "KNN, LOF", "all"} <= set(dev.detector)
     assert (dev.reason.str.len() > 20).all()
+    stated = hp[hp.kind.str.startswith("stated")]
+    assert list(stated.setting) == ["training scores"]          # leave-one-out is PyOD's own
 
 
 def test_booktabs_escapes_special_characters():
