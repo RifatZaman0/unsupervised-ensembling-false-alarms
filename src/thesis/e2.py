@@ -224,7 +224,8 @@ def markdown(head: pd.DataFrame, summ: pd.DataFrame, meta: dict,
              f"K = {p['k_rule']}(budget × n_test), "
              f"PCA zero-variance drop {'on' if p['pca_drop_zero_variance'] else 'off'}, "
              f"ADBench duplicates {'dropped' if p['adbench_dedup'] else 'kept'}. "
-             f"Primary fusion config: {fusion.PRIMARY[0]} + {fusion.PRIMARY[1]}.",
+             f"Primary fusion config: {fusion.LABELS[fusion.PRIMARY[0]]} + "
+             f"{fusion.LABELS[fusion.PRIMARY[1]]}.",
              "Seed means per dataset. Beats best / median = fewer false alarms at K than the "
              "best / median member (best chosen with test labels, an oracle reference). "
              "Ties = exactly as many false alarms; loses = 1 − beats − ties. "
@@ -239,9 +240,10 @@ def markdown(head: pd.DataFrame, summ: pd.DataFrame, meta: dict,
                      f"{r.share_beats_median:.3f} | {r.share_ties_median:.3f} | "
                      f"{r.median_delta_fp_best_rel:+.4f} | {r.median_delta_fp_median_rel:+.4f} |")
     calib, agg = fusion.PRIMARY
+    label = f"{fusion.LABELS[calib]} + {fusion.LABELS[agg]}"
     for b, g in summ[(summ["size"] == 3) & (summ.calib == calib) & (summ["agg"] == agg)].groupby(
             "budget", sort=True):
-        lines += ["", f"## Triple ranking, {calib} + {agg}, budget {b:.0%}", "",
+        lines += ["", f"## Triple ranking, {label}, budget {b:.0%}", "",
                   "| # | Triple | avg rank FP@K (of 20) | mean FP@K | mean PR-AUC "
                   "| #beats best | #beats median | train ρ | train Jaccard |",
                   "|---|---|---|---|---|---|---|---|---|"]
@@ -262,7 +264,7 @@ def markdown(head: pd.DataFrame, summ: pd.DataFrame, meta: dict,
                           "datasets: the top row has the lowest average rank, it is not shown "
                           "to be better."]
     if fried is not None and len(fried):
-        lines += ["", f"## Friedman tests over the combos of one size, {calib} + {agg}", "",
+        lines += ["", f"## Friedman tests over the combos of one size, {label}", "",
                   "| Budget | Size | combos | χ² | p | Iman-Davenport p | Nemenyi CD "
                   "| lowest avg rank | within CD |",
                   "|---|---|---|---|---|---|---|---|---|"]

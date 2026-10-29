@@ -19,6 +19,9 @@ CALIBRATIONS = ("minmax", "zscore", "percentile")
 AGGREGATIONS = ("mean", "max")
 FUSION_CONFIGS = tuple((c, a) for c in CALIBRATIONS for a in AGGREGATIONS)
 PRIMARY = ("minmax", "mean")
+# reader-facing names (figures, LaTeX, markdown); the codes above stay in CSVs
+LABELS = {"minmax": "min-max", "zscore": "z-score", "percentile": "train-percentile",
+          "mean": "mean", "max": "max"}
 
 
 @dataclass(frozen=True)

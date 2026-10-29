@@ -181,7 +181,8 @@ def heatmap(pg: pd.DataFrame, path_stem, commit: str) -> None:
                  fontsize=8)
     cb.ax.tick_params(labelsize=7.5)
     cb.outline.set_visible(False)
-    fig.suptitle(f"Pairs, {fusion.PRIMARY[0]} + {fusion.PRIMARY[1]}: mean gain; "
+    calib, agg = (fusion.LABELS[x] for x in fusion.PRIMARY)
+    fig.suptitle(f"Pairs, {calib} + {agg}: mean gain; "
                  f"below it, #sets (of {n}) where the pair beats its best member", fontsize=8.5)
     _save(fig, path_stem, commit)
 
@@ -212,7 +213,7 @@ def triple_ranking(summ: pd.DataFrame, fried: pd.DataFrame, path_stem, commit: s
         ax.set_xlabel(f"Average FP@K rank among the {n_combos} triples", fontsize=8.5)
         _clean(ax)
     axes = np.atleast_1d(axes)
-    axes[0].scatter([], [], s=22, c=E_LIT_COLOR, label=f"E-lit ({E_LIT})")
+    axes[0].scatter([], [], s=22, c=E_LIT_COLOR, label=f"E-lit = E-bench ({E_LIT})")
     fig.legend(*axes[0].get_legend_handles_labels(), fontsize=7.5, frameon=False,
                loc="upper center", bbox_to_anchor=(0.5, 1.0))
     fig.tight_layout(rect=(0, 0, 1, 0.95))
@@ -226,7 +227,9 @@ def latex_triples(summ: pd.DataFrame, fried: pd.DataFrame, meta: dict) -> str:
     budgets = sorted(tri.budget.unique())
     by = {b: tri[tri.budget == b].sort_values(["avg_rank_fp_at_k", "combo"]).reset_index(drop=True)
           for b in budgets}
-    pos = {b: {c: i + 1 for i, c in enumerate(by[b].combo)} for b in budgets}
+    # competition ranking: equal average ranks share the best position (1, 2, 2, 4)
+    pos = {b: dict(zip(by[b].combo, by[b].avg_rank_fp_at_k.round(TIE_DECIMALS)
+                       .rank(method="min").astype(int))) for b in budgets}
     cols = {b: by[b].set_index("combo") for b in budgets}
     n = int(tri.n_datasets.max())
     head = " & ".join(f"\\multicolumn{{3}}{{c}}{{Budget {round(b * 100)}\\%}}" for b in budgets)
@@ -235,11 +238,12 @@ def latex_triples(summ: pd.DataFrame, fried: pd.DataFrame, meta: dict) -> str:
     lines = [f"% commit {meta['commit']}; source e2_summary.csv, e2_friedman.csv "
              f"({calib} + {agg})",
              "\\begin{table}[t]", "\\centering", "\\small",
-             f"\\caption{{The {len(by[budgets[0]])} detector triples ({calib} calibration, "
-             f"{agg} fusion) by average FP@K rank over {n} ADBench sets (1 = fewest false "
+             f"\\caption{{The {len(by[budgets[0]])} detector triples "
+             f"({fusion.LABELS[calib]} calibration, {fusion.LABELS[agg]} fusion) by average FP@K rank over {n} ADBench sets (1 = fewest false "
              f"alarms), sorted by the {round(budgets[0] * 100)}\\% budget. $<$ best / $<$ median: "
              f"number of sets where the triple raises fewer false alarms than its best / "
-             f"median member. E-lit is IForest+PCA+KNN.}}",
+             f"median member. Equal average ranks share a position. E-lit and E-bench are both "
+             f"IForest+PCA+KNN.}}",
              "\\label{tab:e2-triples}",
              "\\begin{tabular}{l" + "rrr" * len(budgets) + "}", "\\toprule",
              f" & {head} \\\\", rules, f"Triple & {sub} \\\\", "\\midrule"]

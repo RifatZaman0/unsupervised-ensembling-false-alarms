@@ -147,6 +147,18 @@ def test_beats_is_strict_on_seed_means_and_ties_are_counted():
     assert head.share_beats_best == 0 and head.share_ties_best == 0
 
 
+def test_a_win_is_not_also_a_tie():
+    """A combo that beats both members (delta < 0) must not be counted as a tie as well, or the
+    headline tie share would double-count wins (catches ties = delta <= 0)."""
+    r = runs_frame().iloc[[0]].assign(delta_fp_best=-2.0, delta_fp_median=-1.0)
+    row = e2.per_dataset(r).iloc[0]
+    assert row.beats_best and not row.ties_best
+    assert row.beats_median and not row.ties_median
+    head = e2.headline(e2.per_dataset(r)).iloc[0]
+    assert head.share_beats_best == 1 and head.share_ties_best == 0
+    assert head.share_beats_median == 1 and head.share_ties_median == 0
+
+
 def test_friedman_over_combos_of_one_size():
     from scipy import stats
     rng = np.random.default_rng(3)
@@ -168,6 +180,20 @@ def test_friedman_over_combos_of_one_size():
         assert f.friedman_chi2 == pytest.approx(chi2) and f.friedman_p == pytest.approx(p)
         assert f.lowest_avg_rank_combo == "X" and f.lowest_avg_rank == 1.0
         assert f.n_combos == 3 and f.n_datasets == 4
+        avg = w.rank(axis=1).mean()
+        assert f.n_within_cd == sum(v - avg.min() < f.nemenyi_cd for v in avg)
+
+
+def test_n_within_cd_counts_only_combos_closer_than_cd():
+    """Six combos with a fixed order on 10 datasets: average ranks 1..6, CD (k=6, N=10) = 2.38,
+    so exactly the ranks 1, 2 and 3 lie within CD of the lowest."""
+    rows = [{"dataset": f"d{i}", "budget": b, "size": 2, "calib": fusion.PRIMARY[0],
+             "agg": fusion.PRIMARY[1], "combo": c, "fp_at_k": float(j)}
+            for i in range(10) for b in metrics.ADBENCH_BUDGETS
+            for j, c in enumerate("ABCDEF")]
+    for f in e2.friedman(pd.DataFrame(rows)).itertuples():
+        assert f.nemenyi_cd == pytest.approx(2.384, abs=1e-3)
+        assert f.n_within_cd == 3
 
 
 def test_members_match_e1():

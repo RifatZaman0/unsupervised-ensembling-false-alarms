@@ -89,6 +89,23 @@ def test_latex_triples(tables):
                  & (summ["agg"] == "mean")].sort_values(["avg_rank_fp_at_k", "combo"])
     assert [ln.split(" & ")[0] for ln in body] == list(first.combo)
     assert "c0ffee1" in tex and "\\begin{tabular}" in tex and "Friedman" in tex
+    assert "min-max calibration" in tex and "minmax" not in tex.split("\n", 1)[1]
+
+
+def test_latex_triples_tied_ranks_share_a_position(tables):
+    """Competition ranking: exactly equal average ranks get the same (best) position."""
+    _, summ, fried = tables
+    summ = summ.copy()
+    tri = (summ["size"] == 3) & (summ.calib == "minmax") & (summ["agg"] == "mean")
+    for b in summ.budget.unique():
+        sel = summ[tri & (summ.budget == b)].sort_values(["avg_rank_fp_at_k", "combo"])
+        # distinct average ranks 1..20, then positions 2 and 3 get exactly the same one
+        summ.loc[sel.index, "avg_rank_fp_at_k"] = np.arange(1.0, len(sel) + 1)
+        summ.loc[sel.index[2], "avg_rank_fp_at_k"] = 2.0
+    tex = e2_figures.latex_triples(summ, fried, {"commit": "c0ffee1"})
+    body = [ln for ln in tex.splitlines() if ln.count("+") == 2 and ln.endswith("\\")]
+    positions = [int(ln.split(" & ")[1].split("(")[1].rstrip(")")) for ln in body]
+    assert positions[:4] == [1, 2, 2, 4]
 
 
 def test_write_names_the_commit(tables, tmp_path):
