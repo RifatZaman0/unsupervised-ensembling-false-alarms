@@ -21,6 +21,13 @@ from dataclasses import dataclass, fields
 
 K_RULES = ("ceil", "round", "floor")
 
+# Fixed (not switches). KNN / LOF are fitted on a sample of at most this many training rows
+# (Master Plan § Detectors: 30,000-row sample on fraud data). The sample is drawn with the
+# split seed, or with KNN_LOF_SAMPLE_SEED when the split has none (ULB, IEEE-CIS). ADBench
+# training splits are all smaller (largest: 29,720 rows), so the sample never applies there.
+KNN_LOF_MAX_FIT_ROWS = 30_000
+KNN_LOF_SAMPLE_SEED = 0
+
 
 @dataclass(frozen=True)
 class Protocol:

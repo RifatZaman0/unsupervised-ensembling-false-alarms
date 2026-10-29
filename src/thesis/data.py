@@ -178,6 +178,21 @@ def load_ulb() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return X, y, t
 
 
+def load_ulb_day1_features() -> np.ndarray:
+    """Day-1 features only (same columns and log1p(Amount) as load_ulb), without labels.
+
+    The Class column is never read, and day-2 rows are dropped right after reading Time, so
+    nothing here can see a label or a test row. For training-score checks before the freeze.
+    """
+    df = pd.read_csv(ULB_CSV, usecols=ULB_FEATURES + ["Time"])
+    assert "Class" not in df.columns
+    df = df[df["Time"] < ULB_DAY_SECONDS]
+    X = df[ULB_FEATURES].to_numpy(dtype=np.float64)
+    X[:, -1] = np.log1p(X[:, -1])
+    assert np.isfinite(X).all()
+    return X
+
+
 def split_ulb(X: np.ndarray | None = None, y: np.ndarray | None = None,
               t: np.ndarray | None = None) -> Split:
     """Day 1 (Time < 86,400 s) fit, day 2 test."""

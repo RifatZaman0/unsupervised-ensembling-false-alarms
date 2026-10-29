@@ -23,9 +23,8 @@ from thesis import config
 
 DETECTORS = ("IForest", "PCA", "ECOD", "HBOS", "KNN", "LOF")
 SEEDED = ("IForest",)  # detectors whose result depends on the seed
-# KNN / LOF are fitted on at most this many training rows (Master Plan: 30,000-row sample on
-# fraud data). ADBench training splits are all smaller (largest: 29,720 rows), so it never applies there.
-MAX_FIT_ROWS = 30_000
+# KNN / LOF training-row sample (thesis.config); part of the score cache key.
+MAX_FIT_ROWS = config.KNN_LOF_MAX_FIT_ROWS
 # Library defaults, recorded so the hyperparameter table and the cache key come from one place.
 PARAMS = {
     "IForest": {"n_estimators": 100, "max_samples": "auto"},
@@ -130,9 +129,8 @@ def make_detector(name: str, seed: int | None = None):
     raise ValueError(f"unknown detector {name!r}")
 
 
-def score(name: str, X_fit: np.ndarray, X_score: np.ndarray,
-          seed: int | None = None) -> tuple[np.ndarray, np.ndarray]:
-    """Fit `name` on X_fit (unlabelled) and return (scores of X_fit, scores of X_score).
+def fit_scores(name: str, X_fit: np.ndarray, seed: int | None = None):
+    """Fit `name` on X_fit (unlabelled); return (fitted detector, training scores).
 
     For KNN / LOF on more than MAX_FIT_ROWS rows, the detector is fitted on a seeded sample;
     sampled rows keep their leave-one-out scores and the remaining training rows are scored
@@ -144,7 +142,7 @@ def score(name: str, X_fit: np.ndarray, X_score: np.ndarray,
         raise ValueError(f"{name} needs a seed")
     det = make_detector(name, seed)
     if name in ("KNN", "LOF") and len(X_fit) > MAX_FIT_ROWS:
-        rng = np.random.default_rng(0 if seed is None else seed)
+        rng = np.random.default_rng(config.KNN_LOF_SAMPLE_SEED if seed is None else seed)
         sample = np.sort(rng.choice(len(X_fit), MAX_FIT_ROWS, replace=False))
         det.fit(X_fit[sample])
         rest = np.setdiff1d(np.arange(len(X_fit)), sample)
@@ -154,6 +152,16 @@ def score(name: str, X_fit: np.ndarray, X_score: np.ndarray,
     else:
         det.fit(X_fit)
         s_fit = np.asarray(det.decision_scores_, dtype=np.float64)
+    if not np.isfinite(s_fit).all():
+        raise NonFiniteScores(f"{name}: non-finite scores")
+    return det, s_fit
+
+
+def score(name: str, X_fit: np.ndarray, X_score: np.ndarray,
+          seed: int | None = None) -> tuple[np.ndarray, np.ndarray]:
+    """Fit `name` on X_fit (unlabelled) and return (scores of X_fit, scores of X_score);
+    see fit_scores for the KNN / LOF training sample."""
+    det, s_fit = fit_scores(name, X_fit, seed)
     s_score = np.asarray(det.decision_function(X_score), dtype=np.float64)
     if not (np.isfinite(s_fit).all() and np.isfinite(s_score).all()):
         raise NonFiniteScores(f"{name}: non-finite scores")
