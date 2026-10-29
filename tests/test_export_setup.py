@@ -1,6 +1,7 @@
 """Setup tables: every parameter is a checked PyOD default or a listed deviation, LaTeX is
 escaped, and the runtime table summarises per detector."""
 import pandas as pd
+import pytest
 
 from thesis import detectors, export_setup
 
@@ -17,6 +18,12 @@ def test_hyperparameters_are_defaults_or_listed_deviations():
     assert (dev.reason.str.len() > 20).all()
     stated = hp[hp.kind.str.startswith("stated")]
     assert list(stated.setting) == ["training scores"]          # leave-one-out is PyOD's own
+
+
+def test_a_non_default_parameter_must_be_listed(monkeypatch):
+    monkeypatch.setitem(detectors.PARAMS, "KNN", {**detectors.PARAMS["KNN"], "n_neighbors": 7})
+    with pytest.raises(SystemExit, match="not the PyOD default"):
+        export_setup.hyperparameter_table()
 
 
 def test_booktabs_escapes_special_characters():

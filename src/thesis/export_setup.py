@@ -193,7 +193,7 @@ def main() -> None:
                                "adbench_max_dataset": "max on",
                                "adbench_total_s": "ADBench total (s)",
                                "ulb_day1_fit_s": "ULB day 1 (s)"}).drop(columns="ulb_runs"),
-            f"Detector runtimes in seconds, single thread, on {hw['cpu']} "
+            f"Detector runtimes in seconds, n\\_jobs = 1, on {hw['cpu']} "
             f"({hw['logical_cores']} logical cores, {hw['ram_gb']} GB RAM). ADBench: fit + "
             f"scoring of one split ({n_ad} sets $\\times$ 5 seeds), recorded when the score "
             "cache was filled. ULB: fit on day 1 and training scores only (IForest: mean of "

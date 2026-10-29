@@ -61,8 +61,10 @@ set PYTHONPATH=src            (PowerShell: $env:PYTHONPATH="src")
                                                   # versions, runtimes; CSV + booktabs) -> results/tables/setup/
 ```
 
-- `frozen_config.json` holds the ensembles (E-lit, E-bench, E-bench-5%, E-all), fusion configs, budgets,
-  thresholds, rules, data handling, metrics and baselines. `thesis.frozen.load()` reads and checks it;
+- `frozen_config.json` holds the ensembles (E-bench primary, E-lit = E-bench, E-bench-5% and E-all secondary),
+  fusion configs, budgets and thresholds for ULB and IEEE-CIS, rules, data handling, metrics, seed handling,
+  bootstrap, the hypotheses with their criterion, and the baselines. IEEE-CIS feature preprocessing is the only
+  part fixed later (freeze-v2, from month-1 data without labels). `thesis.frozen.load()` reads and checks it;
   `tests/test_frozen.py` checks that it agrees with the code and that E-bench follows its rule.
 - KNN / LOF fit sample: `config.KNN_LOF_MAX_FIT_ROWS` (30,000) rows, drawn with the split seed or
   `config.KNN_LOF_SAMPLE_SEED` (0) when the split has none; it never applies to ADBench.

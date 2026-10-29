@@ -85,8 +85,9 @@ def markdown(summ: pd.DataFrame, fried: pd.DataFrame, meta: dict) -> str:
               "the critical difference of the first). E-bench has the lowest average rank under "
               "the declared rule; it is not shown to be better than the other triples.",
               f"- **E-bench = {bench}." + (f" This is the same triple as E-lit ({E_LIT}), the "
-              "published default.** The coincidence must be stated in the paper: the frozen "
-              "set then has two distinct primary ensembles (E-lit/E-bench and E-all), not three."
+              "published default.** The coincidence must be stated in the paper: the benchmark "
+              "rule confirms the literature default. E-bench (= E-lit) is the one primary "
+              "ensemble; E-all is a secondary, descriptive control."
               if bench == E_LIT else f"** E-lit is {E_LIT}."),
               f"- **E-bench-5% = {bench5}** (the same rule at the {SECONDARY_BUDGET:.0%} "
               "budget) is declared a **secondary** ensemble and frozen with the others before "

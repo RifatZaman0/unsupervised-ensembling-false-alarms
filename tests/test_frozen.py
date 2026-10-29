@@ -7,7 +7,7 @@ import pyod
 import pytest
 
 from thesis import config, data, detectors, e2, e2_figures, ebench, frozen, fusion, metrics, scorecache
-from thesis.paths import TABLES
+from thesis.paths import FROZEN_CONFIG, TABLES
 
 
 @pytest.fixture(scope="module")
@@ -21,17 +21,46 @@ def test_loads_and_members_are_in_the_pool(cfg):
         assert set(e["members"]) <= set(detectors.DETECTORS)
     assert tuple(cfg["ensembles"]["E-all"]["members"]) == detectors.DETECTORS
     assert e2.combo_name(cfg["ensembles"]["E-lit"]["members"]) == e2_figures.E_LIT
-    assert cfg["ensembles"]["E-bench-5%"]["role"] == "secondary"
+    roles = {n: e["role"] for n, e in cfg["ensembles"].items()}
+    assert roles == {"E-bench": "primary", "E-lit": "alias", "E-bench-5%": "secondary",
+                     "E-all": "secondary"}
+    assert cfg["ensembles"]["E-lit"]["alias_of"] == "E-bench"
+    assert cfg["ensembles"]["E-lit"]["members"] == cfg["ensembles"]["E-bench"]["members"]
 
 
 def test_budgets_and_quantiles(cfg):
     ad, ulb = cfg["budgets"]["adbench"], cfg["budgets"]["ulb"]
     assert tuple(ad["values"]) == metrics.ADBENCH_BUDGETS and ad["primary"] == 0.02
     assert ulb["values"] == [0.001, 0.002, 0.005] and ulb["primary"] == 0.002
+    ieee = cfg["budgets"]["ieee_cis"]
+    assert ieee["values"] == [0.005, 0.01, 0.02] and ieee["primary"] == 0.02
     assert cfg["thresholds"]["ulb"]["training_score_quantiles"] == [0.998, 0.995]
+    assert cfg["thresholds"]["ieee_cis"]["training_score_quantiles"] == [0.99, 0.98]
     # a quantile threshold flags about (1 - q) of the rows: inside the range of the budgets
-    for q in cfg["thresholds"]["ulb"]["training_score_quantiles"]:
-        assert min(ulb["values"]) <= round(1 - q, 9) <= max(ulb["values"])
+    for data in ("ulb", "ieee_cis"):
+        b = cfg["budgets"][data]["values"]
+        for q in cfg["thresholds"][data]["training_score_quantiles"]:
+            assert min(b) <= round(1 - q, 9) <= max(b)
+
+
+def test_statistics_and_hypotheses(cfg):
+    boot = cfg["statistics"]["bootstrap"]
+    assert boot["resamples"] == 1000 and boot["seed"] == 0
+    assert "transaction-level" in boot["ulb"] and "day-block" in boot["ieee_cis"]
+    assert "95%" in boot["ci"] and "entirely below 0" in cfg["statistics"]["criterion"]
+    h = cfg["hypotheses"]
+    assert h["primary_ensemble"] == "E-bench"
+    assert (h["primary_fusion"]["calibration"], h["primary_fusion"]["aggregation"]) == fusion.PRIMARY
+    assert h["H1a"]["comparator"] == "median_single" and h["H1b"]["comparator"] == "default_iforest"
+    assert "degenerate" in h["H2b"]["primary"] and "E-bench-5%" in h["H2b"]["secondary"]
+    assert "no calibration window" in cfg["data"]["ieee_cis"]["split"]
+    assert "freeze-v2" in cfg["data"]["ieee_cis"]["features_freeze_v2"]
+
+
+def test_no_wording_that_goes_stale_after_the_tag():
+    text = FROZEN_CONFIG.read_text(encoding="utf-8").lower()
+    for word in ("candidate", "pending", "awaiting", "to be decided", "tbd", "[student]"):
+        assert word not in text, word
 
 
 def test_matches_the_code(cfg):
@@ -65,6 +94,21 @@ def test_ebench_follows_the_rule(cfg):
     lambda c: c["thresholds"]["ulb"].update(training_score_quantiles=[0.998, 1.2]),
     lambda c: c["fusion"]["sensitivity"].pop(),
     lambda c: c["fusion"].update(primary={"calibration": "zscore", "aggregation": "mean"}),
+    # primary swapped with a sensitivity config (hypotheses moved along): the set of configs is
+    # still complete, so only the check on the primary itself catches it
+    lambda c: (c["fusion"]["sensitivity"].__setitem__(1, c["fusion"]["primary"]),
+               c["fusion"].update(primary={"calibration": "zscore", "aggregation": "mean"}),
+               c["hypotheses"].update(primary_fusion={"calibration": "zscore",
+                                                      "aggregation": "mean"})),
+    lambda c: c["ensembles"]["E-all"].update(role="main"),
+    lambda c: c["ensembles"]["E-bench-5%"].update(members=["IForest", "IForest", "KNN"]),
+    lambda c: c["ensembles"]["E-all"].update(role="primary"),
+    lambda c: c["ensembles"]["E-lit"].update(members=["IForest", "PCA", "LOF"]),
+    lambda c: c["budgets"].pop("ieee_cis"),
+    lambda c: c["thresholds"].pop("ieee_cis"),
+    lambda c: c["statistics"]["bootstrap"].update(resamples=0),
+    lambda c: c["hypotheses"]["H1a"].update(ensemble="E-all"),
+    lambda c: c.pop("hypotheses"),
 ])
 def test_validate_rejects_broken_configs(cfg, breaks):
     bad = copy.deepcopy(cfg)
