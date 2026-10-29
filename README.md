@@ -49,7 +49,23 @@ set PYTHONPATH=src            (PowerShell: $env:PYTHONPATH="src")
                                                # Friedman tests, triple ranking in e2_summary.md) and the figures
                                                # in results/figures/e2/; same switches as thesis.e1
 .venv\Scripts\python.exe -m thesis.e2_figures  # rebuild only the E2 figures and e2_triples.tex from the E2 tables
+.venv\Scripts\python.exe -m thesis.ebench      # E-bench rule applied to the E2 tables -> results/tables/e2/ebench.md
 ```
+
+## Before the freeze
+
+```
+.venv\Scripts\python.exe -m thesis.zero_variance  # constant training scores: ADBench score cache + ULB day 1
+                                                  # (no labels read, day 2 not scored) -> results/tables/setup/
+.venv\Scripts\python.exe -m thesis.export_setup   # Experimental Setup tables (datasets, hyperparameters,
+                                                  # versions, runtimes; CSV + booktabs) -> results/tables/setup/
+```
+
+- `frozen_config.json` holds the ensembles (E-lit, E-bench, E-bench-5%, E-all), fusion configs, budgets,
+  thresholds, rules, data handling, metrics and baselines. `thesis.frozen.load()` reads and checks it;
+  `tests/test_frozen.py` checks that it agrees with the code and that E-bench follows its rule.
+- KNN / LOF fit sample: `config.KNN_LOF_MAX_FIT_ROWS` (30,000) rows, drawn with the split seed or
+  `config.KNN_LOF_SAMPLE_SEED` (0) when the split has none; it never applies to ADBench.
 
 - `detectors.score(name, X_fit, X_score, seed)` → (training scores, new-row scores); PyOD defaults, inputs
   z-scored with training statistics. Deviations: ECOD is a train-only re-implementation (PyOD's ECOD scores new

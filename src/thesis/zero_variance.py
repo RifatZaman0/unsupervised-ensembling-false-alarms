@@ -78,7 +78,7 @@ def main() -> None:
     ad, ulb = adbench_rows(), ulb_rows()
     if len(ad) != 15 * 5 * 6:
         raise SystemExit(f"expected 450 cached ADBench score files, found {len(ad)}")
-    df = pd.DataFrame(ad + ulb)
+    df = pd.DataFrame(ad + ulb).astype({"seed": "Int64"})
     OUT.mkdir(parents=True, exist_ok=True)
     df.to_csv(OUT / "zero_variance.csv", index=False)
     counts = {d: {"members": int(len(g)), "zero_variance": int(g.zero_variance.sum()),

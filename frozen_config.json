@@ -1,0 +1,95 @@
+{
+ "name": "freeze-v1",
+ "status": "candidate for review; tagged freeze-v1 only after a review PASS and the student's go-ahead, never edited afterwards",
+ "written": "2026-10-29",
+ "purpose": "Everything that is fixed before any fraud-data (ULB, IEEE-CIS) result exists. Choices made with labels use ADBench only.",
+
+ "detectors": {
+  "pool": ["IForest", "PCA", "ECOD", "HBOS", "KNN", "LOF"],
+  "library": "PyOD 3.6.7",
+  "params": {
+   "IForest": {"n_estimators": 100, "max_samples": "auto"},
+   "PCA": {"standardization": true, "min_variance_ratio": 1e-10},
+   "ECOD": {},
+   "HBOS": {"n_bins": 10, "alpha": 0.1, "tol": 0.5},
+   "KNN": {"n_neighbors": 5, "method": "largest"},
+   "LOF": {"n_neighbors": 20, "novelty": true}
+  },
+  "params_note": "PyOD defaults, except PCA min_variance_ratio (components with explained-variance ratio <= 1e-10 are dropped; a documented modification of PyOD's PCA). contamination is unused: no detector threshold is used.",
+  "ecod": "train-only re-implementation: ECDFs and skewness signs fixed at fit time (PyOD 3.6.7 ECOD is batch-dependent)",
+  "knn_lof_training_scores": "leave-one-out (a row is not its own neighbour)",
+  "knn_lof_fit_sample": {"max_rows": 30000, "seed": "split seed; 0 when the split has none (ULB, IEEE-CIS)", "rows_outside_sample": "scored like new rows"},
+  "iforest_seeds": [0, 1, 2, 3, 4],
+  "score_direction": "higher = more anomalous for every detector"
+ },
+
+ "ensembles": {
+  "E-lit": {"members": ["IForest", "PCA", "KNN"], "role": "primary", "source": "published default (Master Plan)"},
+  "E-bench": {"members": ["IForest", "PCA", "KNN"], "role": "primary", "source": "lowest average FP@K rank among the 20 triples, min-max + mean, 15 ADBench sets, 2% budget (supervisor, 2026-10-29)", "note": "identical to E-lit; the paper states this coincidence. Friedman over the 20 triples: p 0.976 (2%), 0.419 (5%), all within the Nemenyi CD, so the triples cannot be told apart"},
+  "E-bench-5%": {"members": ["IForest", "KNN", "LOF"], "role": "secondary", "source": "the E-bench rule at the 5% ADBench budget"},
+  "E-all": {"members": ["IForest", "PCA", "ECOD", "HBOS", "KNN", "LOF"], "role": "primary", "source": "all six detectors: the 'bigger is better?' control"}
+ },
+ "ensemble_selection_evidence": "results/tables/e2/ebench.md, e2_summary.csv, e2_friedman.csv",
+
+ "fusion": {
+  "primary": {"calibration": "minmax", "aggregation": "mean"},
+  "sensitivity": [
+   {"calibration": "minmax", "aggregation": "max"},
+   {"calibration": "zscore", "aggregation": "mean"},
+   {"calibration": "zscore", "aggregation": "max"},
+   {"calibration": "percentile", "aggregation": "mean"},
+   {"calibration": "percentile", "aggregation": "max"}
+  ],
+  "calibrators": "fitted per member on that member's training scores only; min-max not clipped; percentile = share of training scores <= s"
+ },
+
+ "budgets": {
+  "adbench": {"values": [0.02, 0.05], "primary": 0.02},
+  "ulb": {"values": [0.001, 0.002, 0.005], "primary": 0.002, "primary_source": "student's decision"}
+ },
+ "thresholds": {
+  "ulb": {"training_score_quantiles": [0.998, 0.995], "fitted_on": "day-1 training scores of each method (fused training scores for ensembles)", "applied_to": "day 2", "check": "alert count and FPR on day 2 vs the budget implied by the quantile"}
+ },
+
+ "rules": {
+  "k_rule": "ceil",
+  "k_definition": "K = max(1, ceil(budget * n_test)), with budget * n_test rounded to 9 decimals first",
+  "k_rule_status": "approved by the supervisor, 2026-10-29",
+  "ties": "expected value: rows tied with the K-th score share the remaining alert slots in proportion, so row order never decides an alert",
+  "ties_status": "approved by the supervisor, 2026-10-28",
+  "zero_variance_member": "under z-score calibration a member with constant training scores (range exactly 0) maps to 0",
+  "zero_variance_member_status": "supervisor confirmation pending; 0 cases on ADBench and ULB training data (results/tables/setup/zero_variance.csv)"
+ },
+
+ "data": {
+  "adbench": {
+   "source": "Minqi824/ADBench classical .npz files at the commit pinned in src/thesis/download.py",
+   "datasets": ["ALOI", "annthyroid", "cardio", "letter", "mammography", "mnist", "optdigits", "PageBlocks", "pendigits", "satimage-2", "shuttle", "thyroid", "vowels", "Waveform", "Wilt"],
+   "selection_rule": "1,000-50,000 rows, at most 100 features, anomaly rate at most 10%, 13_fraud excluded (it is ULB)",
+   "duplicates": "kept (files as distributed); duplicate-aware robustness check with --dedup; not a full reproduction of the ADBench protocol",
+   "split": "stratified 60/40 train/test", "split_seeds": [0, 1, 2, 3, 4]
+  },
+  "ulb": {
+   "source": "Kaggle mlg-ulb/creditcardfraud, creditcard.csv",
+   "features": "V1-V28 and log1p(Amount); Time is the split variable only",
+   "split": "day 1 (Time < 86400 s) fit, day 2 test; every training row strictly earlier than every test row"
+  },
+  "preprocessing": "z-score of every detector input with training-split statistics (constant columns get scale 1)",
+  "labels": "never passed to fit(), scalers, calibrators or thresholds"
+ },
+
+ "score_cache": {"key": "21ba8c24b9", "pyod": "3.6.7", "note": "key = hash of detector params, KNN/LOF fit sample size, preprocessing, PyOD version and the ECOD variant"},
+
+ "metrics": {
+  "budget": ["fp_at_k", "precision_at_k", "recall_at_k"],
+  "ranking": ["pr_auc", "roc_auc"],
+  "pr_auc_definition": "average precision (sklearn average_precision_score)",
+  "computed_on": "test split only"
+ },
+
+ "baselines": {
+  "single_detectors": ["IForest", "PCA", "ECOD", "HBOS", "KNN", "LOF"],
+  "default_iforest": "IForest with the PyOD defaults above: the realistic practitioner pick",
+  "oracle_best_single": "the single detector with the lowest FP@K on the test window, chosen with test labels: an upper bound, not a deployable method"
+ }
+}
