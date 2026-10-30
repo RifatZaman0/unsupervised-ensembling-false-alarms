@@ -1,7 +1,7 @@
 """Compile LaTeX snippets in the TDK paper's preamble (tdk/main.tex in the project folder).
 
-Used by the tests of every exported .tex table: a table must compile with XeLaTeX and must not
-be wider than the text block (no "Overfull \\hbox" in the log).
+Used by the tests of every exported .tex table: a table must compile with XeLaTeX and must fit
+the text block, neither wider (no "Overfull \\hbox") nor taller (no "Float too large for page").
 """
 from __future__ import annotations
 
@@ -39,6 +39,7 @@ class Result:
     ok: bool
     overfull: list[str]
     log: str
+    too_tall: list[str]          # "Float too large for page by ...pt": taller than the text block
 
 
 def compile_snippet(body: str, preamble: str | None = None, timeout: int = 300) -> Result:
@@ -57,4 +58,5 @@ def compile_snippet(body: str, preamble: str | None = None, timeout: int = 300) 
         log = log_path.read_text(encoding="utf-8", errors="replace") if log_path.exists() else p.stdout
         pdf_ok = (Path(tmp) / "t.pdf").exists()
     overfull = re.findall(r"Overfull \\hbox \(([\d.]+)pt too wide\)", log)
-    return Result(ok=p.returncode == 0 and pdf_ok, overfull=overfull, log=log)
+    too_tall = re.findall(r"Float too large for page by ([\d.]+)pt", log)
+    return Result(ok=p.returncode == 0 and pdf_ok, overfull=overfull, log=log, too_tall=too_tall)

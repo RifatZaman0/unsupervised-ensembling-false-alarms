@@ -76,6 +76,9 @@ def delta_fig(deltas: pd.DataFrame, cfg: dict):
         ax.set_title(title, fontsize=TITLE_PT, color=INK)
         _style(ax)
         ax.set_xlabel("dFP@K per 100 alerts", fontsize=LABEL_PT, color=MUTED)
+    for ax in axes[1:]:          # shared y: no labels there, and no spine next to the 0 line
+        ax.spines["left"].set_visible(False)
+        ax.tick_params(axis="y", length=0)
     axes[0].set_yticks(list(ypos.values()))
     axes[0].set_yticklabels([_label(r.ensemble, r.calib, r.agg, cfg) for r in order.itertuples()],
                             fontsize=TICK_PT, color=INK)

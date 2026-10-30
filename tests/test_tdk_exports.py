@@ -95,6 +95,10 @@ def test_duplicate_table_comes_from_the_csv_unchanged():
     assert [int(v.replace(",", "")) for v in table.removed] == list(has.rows_removed)
     assert list(table["of them anomalies"]) == list(has.anomalies_removed)
     assert [float(v) for v in table["rate (%)"]] == [round(100 * a, 2) for a in has.anomaly_rate]
+    assert [float(v) for v in table["rate after (%)"]] == [round(100 * a, 2)
+                                                           for a in has.anomaly_rate_dedup]
+    assert [int(v.split(" ")[0].replace(",", "")) for v in table["in groups"]] == \
+        list(has.rows_in_dup_groups)
 
 
 @pytest.mark.parametrize("which", ["setup", "results"])
@@ -105,6 +109,7 @@ def test_exported_tables_compile_in_the_tdk_preamble_and_fit(which):
         r = texcheck.compile_snippet(body)
         assert r.ok, f"{name} does not compile:\n{r.log[-2000:]}"
         assert not r.overfull, f"{name} is wider than the text block: {r.overfull} pt"
+        assert not r.too_tall, f"{name} is taller than the text block: {r.too_tall} pt"
 
 
 def test_every_tex_file_in_results_compiles_and_fits():
@@ -114,13 +119,22 @@ def test_every_tex_file_in_results_compiles_and_fits():
         pytest.skip("no .tex in results/tables")
     for f in files:
         r = texcheck.compile_snippet(f.read_text(encoding="utf-8"))
-        assert r.ok and not r.overfull, f"{f.name}: ok={r.ok}, overfull={r.overfull}"
+        assert r.ok and not r.overfull and not r.too_tall, \
+            f"{f.name}: ok={r.ok}, overfull={r.overfull}, too_tall={r.too_tall}"
 
 
 def test_overfull_check_can_fail():
     need_latex()
     r = texcheck.compile_snippet("\\begin{tabular}{l}" + "x" * 400 + "\\end{tabular}")
     assert r.ok and r.overfull
+
+
+def test_too_tall_check_can_fail():
+    need_latex()
+    rows = "\\\\\n".join(["x"] * 80)
+    r = texcheck.compile_snippet("\\begin{table}[t]\\begin{tabular}{l}" + rows +
+                                 "\\end{tabular}\\end{table}")
+    assert r.ok and r.too_tall
 
 
 # ------------------------------------------------------------------ ULB figures
@@ -229,6 +243,7 @@ def test_feature_shift_is_in_day1_standard_deviations():
     X2 = X1[:200] + 2 * X1.std(axis=0)                       # every feature shifted by 2 day-1 SD
     fs = e3_ulb_lof.feature_shift(X1, X2, ["a", "b", "c"])
     np.testing.assert_allclose(fs.shift_sd, (X1[:200].mean(0) - X1.mean(0)) / X1.std(0) + 2)
+    np.testing.assert_allclose(fs.sd_ratio, X1[:200].std(0) / X1.std(0))   # a shift keeps the SD
     # day-2 rows never enter the scaler: changing them leaves the day-1 statistics unchanged
     fs2 = e3_ulb_lof.feature_shift(X1, X2 * 10, ["a", "b", "c"])
     np.testing.assert_array_equal(fs.day1_mean, fs2.day1_mean)

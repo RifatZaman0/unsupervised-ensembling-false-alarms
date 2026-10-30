@@ -61,9 +61,11 @@ DEVIATIONS = [
 
 
 def booktabs(df: pd.DataFrame, caption: str, label: str, commit: str, source: str,
-             align: str | None = None, colsep: str | None = None) -> str:
+             align: str | None = None, colsep: str | None = None,
+             size: str = "\\small") -> str:
     """booktabs table; `colsep` narrows \\tabcolsep (LaTeX default 6pt) so that a wide table
-    fits the 16 cm text block of the TDK paper without changing any cell."""
+    fits the 16 cm text block of the TDK paper without changing any cell; `size` sets a long
+    table in a smaller font so that it fits the page height."""
     def esc(v) -> str:
         s = str(v)
         for a, b in (("\\", "\\textbackslash{}"), ("&", "\\&"), ("%", "\\%"), ("_", "\\_"),
@@ -72,7 +74,7 @@ def booktabs(df: pd.DataFrame, caption: str, label: str, commit: str, source: st
         return s
     align = align or "l" * len(df.columns)
     lines = [f"% commit {commit}; source {source}", "\\begin{table}[t]", "\\centering",
-             "\\small"] + ([f"\\setlength{{\\tabcolsep}}{{{colsep}}}"] if colsep else []) + [
+             size] + ([f"\\setlength{{\\tabcolsep}}{{{colsep}}}"] if colsep else []) + [
              f"\\caption{{{caption}}}", f"\\label{{{label}}}",
              f"\\begin{{tabular}}{{{align}}}", "\\toprule",
              " & ".join(esc(c) for c in df.columns) + " \\\\", "\\midrule"]
@@ -195,7 +197,8 @@ def tex_tables(ds: pd.DataFrame, hp: pd.DataFrame, ver: pd.DataFrame, rt: pd.Dat
             "Detector settings: PyOD 3.6.7 defaults as used, and every deviation with its "
             "reason. contamination is not listed: no detector threshold is used.",
             "tab:setup-hyperparameters", commit, "hyperparameters (thesis.export_setup)",
-            "llp{0.17\\linewidth}p{0.12\\linewidth}p{0.32\\linewidth}", colsep="4pt"),
+            "llp{0.17\\linewidth}p{0.12\\linewidth}p{0.32\\linewidth}", colsep="4pt",
+            size="\\footnotesize"),             # 16 rows: \small is 43.6 pt taller than the page
         "versions": booktabs(ver, "Software versions.", "tab:setup-versions", commit,
                              "versions (thesis.export_setup)"),
         "runtimes": booktabs(
