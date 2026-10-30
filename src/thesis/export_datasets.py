@@ -26,16 +26,8 @@ def git_state() -> dict:
     return {"commit": git("rev-parse", "HEAD"), "dirty": bool(git("status", "--porcelain"))}
 
 
-def main() -> None:
-    state = git_state()
-    if state["dirty"]:
-        raise SystemExit("Working tree has uncommitted changes; commit before exporting results.")
-    OUT.mkdir(parents=True, exist_ok=True)
-
-    cat = data.adbench_catalogue()
-    cat["selected"] = cat.dataset.isin(data.select_adbench(cat))
-    cat.to_csv(OUT / "adbench_catalogue.csv", index=False)
-
+def dataset_rows() -> list[dict]:
+    """One row per dataset: size, features, anomalies, split sizes (ADBench: seed 0)."""
     rows = []
     for name in sorted(data.ADBENCH_15, key=str.lower):
         X, y = data.load_adbench(name)
@@ -51,7 +43,19 @@ def main() -> None:
                  "n_features": X.shape[1], "n_anomalies": int(y.sum()), "anomaly_rate": y.mean(),
                  "n_train": len(s.y_train), "n_test": len(s.y_test),
                  "anomalies_train": int(s.y_train.sum()), "anomalies_test": int(s.y_test.sum())})
-    pd.DataFrame(rows).to_csv(OUT / "datasets.csv", index=False)
+    return rows
+
+
+def main() -> None:
+    state = git_state()
+    if state["dirty"]:
+        raise SystemExit("Working tree has uncommitted changes; commit before exporting results.")
+    OUT.mkdir(parents=True, exist_ok=True)
+
+    cat = data.adbench_catalogue()
+    cat["selected"] = cat.dataset.isin(data.select_adbench(cat))
+    cat.to_csv(OUT / "adbench_catalogue.csv", index=False)
+    pd.DataFrame(dataset_rows()).to_csv(OUT / "datasets.csv", index=False)
 
     dups = []
     for name in sorted(data.ADBENCH_15, key=str.lower):

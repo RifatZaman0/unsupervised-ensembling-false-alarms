@@ -19,6 +19,9 @@ CALIBRATIONS = ("minmax", "zscore", "percentile")
 AGGREGATIONS = ("mean", "max")
 FUSION_CONFIGS = tuple((c, a) for c in CALIBRATIONS for a in AGGREGATIONS)
 PRIMARY = ("minmax", "mean")
+# reader-facing names (figures, LaTeX, markdown); the codes above stay in CSVs
+LABELS = {"minmax": "min-max", "zscore": "z-score", "percentile": "train-percentile",
+          "mean": "mean", "max": "max"}
 
 
 @dataclass(frozen=True)
@@ -44,7 +47,9 @@ class Calibrator:
             lo, span = s_train.min(), np.ptp(s_train)
             return cls(kind, lo, span if span > 0 else 1.0)
         if kind == "zscore":
-            sd = s_train.std()
+            # constant = range exactly 0; the float std of a constant vector can be ~1e-16
+            # (e.g. 50 x 3.2), which would blow the member up instead of setting it to 0
+            sd = s_train.std() if np.ptp(s_train) > 0 else 0.0
             return cls(kind, s_train.mean(), sd)
         if kind == "percentile":
             return cls(kind, ref=np.sort(s_train))
