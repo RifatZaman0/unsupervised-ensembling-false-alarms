@@ -178,6 +178,20 @@ def load_ulb() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return X, y, t
 
 
+def load_ulb_unlabelled() -> tuple[np.ndarray, np.ndarray]:
+    """All ULB features (same columns and log1p(Amount) as load_ulb) and Time, without labels.
+
+    The Class column is never read (usecols), so nothing computed from this can use a label.
+    For label-free diagnostics of day 1 against day 2.
+    """
+    df = pd.read_csv(ULB_CSV, usecols=ULB_FEATURES + ["Time"])
+    assert "Class" not in df.columns
+    X = df[ULB_FEATURES].to_numpy(dtype=np.float64)
+    X[:, -1] = np.log1p(X[:, -1])
+    assert np.isfinite(X).all()
+    return X, df["Time"].to_numpy(dtype=np.float64)
+
+
 def load_ulb_day1_features() -> np.ndarray:
     """Day-1 features only (same columns and log1p(Amount) as load_ulb), without labels.
 

@@ -513,7 +513,8 @@ def tex_tables(budget: pd.DataFrame, hyp: pd.DataFrame, thr: pd.DataFrame, cfg: 
         "e3_ulb_threshold.tex": booktabs(
             tt, "ULB threshold check: day-1 training-score quantile thresholds applied unchanged "
                 "to day 2 (seed means; ensembles with min-max + mean).",
-            "tab:e3-ulb-threshold", commit, f"{src}/e3_ulb_threshold.csv", "lrrrrrr"),
+            "tab:e3-ulb-threshold", commit, f"{src}/e3_ulb_threshold.csv", "lrrrrrr",
+            colsep="4.5pt"),
     }
 
 
