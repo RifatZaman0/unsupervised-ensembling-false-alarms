@@ -3,13 +3,14 @@ unchanged since the tag, and the budget / threshold / hypothesis logic."""
 from __future__ import annotations
 
 import copy
+import re
 import subprocess
 
 import numpy as np
 import pandas as pd
 import pytest
 
-from thesis import bootstrap, data, detectors, e3_ulb, frozen, fusion
+from thesis import bootstrap, config, data, detectors, e3_ulb, frozen, fusion
 from thesis.paths import REPO
 
 needs_ulb = pytest.mark.skipif(not data.ULB_CSV.exists(), reason="ULB not downloaded")
@@ -119,16 +120,38 @@ def test_frozen_config_unchanged_since_the_tag():
         e3_ulb.frozen_unchanged("no-such-tag")
 
 
-def test_code_must_match_the_frozen_file(cfg):
+CODE_CHECK_BREAKS = {          # one break per check of check_code_matches, named in the error
+    "detector params": lambda c: c["detectors"]["params"]["KNN"].update(n_neighbors=10),
+    "PyOD version": lambda c: c["detectors"].update(library="PyOD 0.0"),
+    "KNN/LOF fit sample": lambda c: c["detectors"]["knn_lof_fit_sample"].update(max_rows=10_000),
+    "KNN/LOF sample seed": lambda c: c["detectors"]["knn_lof_fit_sample"].update(
+        seed="split seed; 1 when the split has none (ULB, IEEE-CIS)"),
+    "score cache spec": lambda c: c["score_cache"].update(key="x"),
+    "threshold rule": lambda c: c["thresholds"]["common"].update(rule="alert if score >= threshold"),
+    "k rule": lambda c: c["rules"].update(k_rule="round"),
+    "ULB split": lambda c: c["data"]["ulb"].update(split="Time < 1 s"),
+    "ULB bootstrap": lambda c: c["statistics"]["bootstrap"].update(ulb="day-block"),
+    "bootstrap code": lambda c: c["statistics"]["bootstrap"].update(code="thesis.other"),
+    "metrics": lambda c: c["metrics"].update(budget=["fp_at_k", "precision_at_k"]),
+}
+
+
+def test_code_matches_the_frozen_file(cfg):
     e3_ulb.check_code_matches(cfg)
-    for brk in (lambda c: c["detectors"]["params"]["KNN"].update(n_neighbors=10),
-                lambda c: c["thresholds"]["common"].update(rule="alert if score >= threshold"),
-                lambda c: c["statistics"]["bootstrap"].update(ulb="day-block"),
-                lambda c: c["detectors"]["knn_lof_fit_sample"].update(max_rows=10_000)):
-        bad = copy.deepcopy(cfg)
-        brk(bad)
-        with pytest.raises(RuntimeError):
-            e3_ulb.check_code_matches(bad)
+
+
+@pytest.mark.parametrize("check", list(CODE_CHECK_BREAKS))
+def test_each_code_check_rejects_its_break(cfg, check):
+    bad = copy.deepcopy(cfg)
+    CODE_CHECK_BREAKS[check](bad)
+    with pytest.raises(RuntimeError, match=re.escape(f"'{check}'")):
+        e3_ulb.check_code_matches(bad)
+
+
+def test_code_check_rejects_a_non_default_protocol(cfg, monkeypatch):
+    monkeypatch.setattr(config, "PROTOCOL", config.Protocol(adbench_dedup=True))
+    with pytest.raises(RuntimeError, match="'default protocol'"):
+        e3_ulb.check_code_matches(cfg)
 
 
 def test_methods_come_from_the_file(cfg):
@@ -155,7 +178,7 @@ def hand_fitted(y):
     test = {"IForest": np.vstack([s([pos[0], neg[-1]]), s([neg[-1], neg[-2]])]),   # FP 1, 2 -> 1.5
             "PCA": s(pos[:2])[None], "ECOD": s([pos[0], neg[-1]])[None],           # 0, 1
             "HBOS": s(neg[-2:])[None], "KNN": s(neg[-2:])[None],                   # 2, 2
-            "LOF": s([pos[1], neg[-1]])[None]}                                     # 1
+            "LOF": s(neg[-2:])[None]}                                              # 2
     test["E-bench:minmax+mean"] = s([pos[0], neg[-1]])[None]                       # 1
     singles = ("IForest", "PCA", "ECOD", "HBOS", "KNN", "LOF")
     return e3_ulb.Fitted({k: v for k, v in test.items()}, test, singles, {})
@@ -167,7 +190,7 @@ def test_budget_table_baselines_and_regret(cfg):
     f = hand_fitted(y)
     t = e3_ulb.budget_table(e3_ulb.budget_runs(f, y, [0.2]), cfg).set_index("method")
     assert t.loc["IForest", "fp_at_k"] == 1.5 and t.loc["IForest", "n_seeds"] == 2
-    assert t.loc[bootstrap.MEDIAN, "fp_at_k"] == 1.25                # sorted 0 1 1 1.5 2 2
+    assert t.loc[bootstrap.MEDIAN, "fp_at_k"] == 1.75     # sorted 0 1 1.5 2 2 2 (mean 1.4167)
     assert t.loc[bootstrap.ORACLE, "name"] == "PCA" and t.loc[bootstrap.ORACLE, "fp_at_k"] == 0
     assert t.loc[bootstrap.DEFAULT_IFOREST, "fp_at_k"] == 1.5
     assert t.loc["E-bench:minmax+mean", "regret"] == 1.0
@@ -184,8 +207,8 @@ def test_bootstrap_point_matches_the_budget_table(cfg, monkeypatch):
     summ, boot = e3_ulb.bootstrap_budget(f, y, 0.2, cfg, resamples=30)
     s = summ.set_index("stat")
     assert s.loc["fp:IForest", "estimate"] == 1.5
-    assert s.loc["d:E-bench:minmax+mean-median_single", "estimate"] == pytest.approx(-0.25)
-    assert s.loc["d100:E-bench:minmax+mean-median_single", "estimate"] == pytest.approx(-12.5)
+    assert s.loc["d:E-bench:minmax+mean-median_single", "estimate"] == pytest.approx(-0.75)
+    assert s.loc["d100:E-bench:minmax+mean-median_single", "estimate"] == pytest.approx(-37.5)
     assert len(boot) == 30
     again = e3_ulb.bootstrap_budget(f, y, 0.2, cfg, resamples=30)[1]
     pd.testing.assert_frame_equal(boot, again)                       # frozen seed, reproducible
@@ -198,6 +221,8 @@ def deltas_for(cfg, h1a_hi: float, h1b_hi: float) -> pd.DataFrame:
     for a, comp in e3_ulb.comparisons(cfg):
         hi = {bootstrap.MEDIAN: h1a_hi, bootstrap.DEFAULT_IFOREST: h1b_hi}.get(comp, 1.0)
         ens, calib, agg = e3_ulb.parse_key(a)
+        if (calib, agg) != fusion.PRIMARY and comp in (bootstrap.MEDIAN, bootstrap.DEFAULT_IFOREST):
+            hi = 3.0 if hi < 0 else -3.0     # sensitivity configs: the opposite outcome
         rows.append({"budget": cfg["budgets"]["ulb"]["primary"], "method": a, "ensemble": ens,
                      "calib": calib, "agg": agg, "comparator": comp, "d_fp": hi - 1,
                      "d_fp_ci_low": hi - 2, "d_fp_ci_high": hi, "d_fp_per_100": 0.0,
@@ -236,16 +261,68 @@ def test_threshold_table_counts(cfg):
     assert t.train_alert_rate == pytest.approx(0.1) and t.target_rate == pytest.approx(0.1)
 
 
-def test_delta_table_applies_the_frozen_criterion(cfg):
-    """'fewer false alarms' only if the whole CI is below 0; a CI above 0 stays 'no difference
-    shown' (the frozen criterion has two outcomes) and is only flagged, descriptively."""
+def test_only_hypothesis_rows_get_a_verdict(cfg):
+    """statistics.descriptive_cis: no criterion applied. The criterion's verdict appears only on
+    H1a, H1b and the H2b secondary check at the primary budget; every other row is labelled
+    descriptive, with the position of its CI as booleans."""
+    pb = cfg["budgets"]["ulb"]["primary"]
     rows = []
-    for i, (a, comp) in enumerate(e3_ulb.comparisons(cfg)):
-        lo, hi = [(-2.0, -0.1), (0.5, 3.0), (-1.0, 0.0)][i % 3]
-        for pre in ("d", "d100"):
-            rows.append({"budget": 0.002, "stat": f"{pre}:{a}-{comp}", "estimate": (lo + hi) / 2,
-                         "ci_low": lo, "ci_high": hi, "supported": bootstrap.fewer_false_alarms(hi)})
+    for b in (0.001, pb):
+        for i, (a, comp) in enumerate(e3_ulb.comparisons(cfg)):
+            lo, hi = [(-2.0, -0.1), (0.5, 3.0), (-1.0, 0.0)][i % 3]
+            for pre in ("d", "d100"):
+                rows.append({"budget": b, "stat": f"{pre}:{a}-{comp}", "estimate": (lo + hi) / 2,
+                             "ci_low": lo, "ci_high": hi,
+                             "supported": bootstrap.fewer_false_alarms(hi)})
     d = e3_ulb.delta_table(pd.DataFrame(rows), cfg)
-    assert list(d.verdict[:3]) == [e3_ulb.SUPPORT, e3_ulb.NULL, e3_ulb.NULL]
-    assert list(d.ci_entirely_above_0[:3]) == [False, True, False]
-    assert len(d) == len(e3_ulb.comparisons(cfg))
+    assert len(d) == 2 * len(e3_ulb.comparisons(cfg))
+    hyp = d[d.role != "descriptive"]
+    assert sorted(hyp.role) == ["H1a", "H1b", "H2b (secondary)"] and (hyp.budget == pb).all()
+    assert set(d.loc[d.role == "descriptive", "verdict"]) == {e3_ulb.DESCRIPTIVE}
+    for r in hyp.itertuples():
+        assert r.verdict == (e3_ulb.SUPPORT if r.d_fp_ci_high < 0 else e3_ulb.NULL)
+    assert (d.ci_entirely_below_0 == (d.d_fp_ci_high < 0)).all()
+    assert (d.ci_entirely_above_0 == (d.d_fp_ci_low > 0)).all()
+    # a descriptive row with its whole CI below 0 still carries no verdict
+    below = d[(d.role == "descriptive") & d.ci_entirely_below_0]
+    assert len(below) > 0 and (below.verdict == e3_ulb.DESCRIPTIVE).all()
+
+
+# ---------------------------------------------------------------- N2 (review): seed pairing, paired budgets
+
+def test_ensemble_seed_i_uses_iforest_seed_i(cfg):
+    split = toy_split()
+    f = e3_ulb.fit_stage(split, cfg, direct_scores)
+    assert len(f.train["IForest"]) == len(cfg["detectors"]["iforest_seeds"]) > 1
+    assert not np.array_equal(f.test["IForest"][0], f.test["IForest"][1])
+    for ens, members in e3_ulb.distinct_ensembles(cfg).items():
+        key = e3_ulb.method_key(ens, *fusion.PRIMARY)
+        for i in range(len(f.train["IForest"])):
+            rows = [i if m == "IForest" else 0 for m in members]
+            tr, te = fusion.fuse(np.column_stack([f.train[m][j] for m, j in zip(members, rows)]),
+                                 np.column_stack([f.test[m][j] for m, j in zip(members, rows)]),
+                                 *fusion.PRIMARY)
+            np.testing.assert_array_equal(f.train[key][i], tr)
+            np.testing.assert_array_equal(f.test[key][i], te)
+
+
+def test_every_budget_uses_the_same_resamples_from_the_frozen_seed(cfg, monkeypatch):
+    y = np.zeros(10, np.int8)
+    y[:2] = 1
+    f = hand_fitted(y)
+    monkeypatch.setattr(e3_ulb, "comparisons", lambda c: [("E-bench:minmax+mean", bootstrap.MEDIAN)])
+    drawn, real = {}, bootstrap.draw_transactions
+
+    def spy(rng, n):
+        w = real(rng, n)
+        drawn.setdefault(budget, []).append(w[0].copy())
+        return w
+    monkeypatch.setattr(bootstrap, "draw_transactions", spy)
+    for budget in (0.1, 0.2):
+        e3_ulb.bootstrap_budget(f, y, budget, cfg, resamples=5)
+    rng = np.random.default_rng(cfg["statistics"]["bootstrap"]["seed"])
+    expected = [rng.integers(0, len(y), len(y)) for _ in range(5)]
+    for budget in (0.1, 0.2):
+        assert len(drawn[budget]) == 5
+        for got, exp in zip(drawn[budget], expected):
+            np.testing.assert_array_equal(got, exp)

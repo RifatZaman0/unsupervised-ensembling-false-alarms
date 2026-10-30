@@ -51,6 +51,7 @@ FREEZE_TAG = "freeze-v1"
 SEP = ":"                     # method key = "<ensemble>:<calibration>+<aggregation>"
 QUICK_RESAMPLES = 20
 NULL, SUPPORT = "no difference shown", "fewer false alarms"
+DESCRIPTIVE = "descriptive, no criterion applied"     # statistics.descriptive_cis
 
 ScoreFn = Callable[[data.Split, str], dict]
 
@@ -286,21 +287,45 @@ def bootstrap_budget(fitted: Fitted, y: np.ndarray, budget: float, cfg: dict,
     return summ, boot
 
 
+def hypothesis_pairs(cfg: dict) -> dict[tuple[str, str], str]:
+    """(method, comparator) -> hypothesis, for the comparisons the frozen criterion decides
+    (at the primary ULB budget only); every other row is descriptive."""
+    calib, agg = fusion_configs(cfg)[0]
+    hyp = cfg["hypotheses"]
+    pairs = {(method_key(hyp[h]["ensemble"], calib, agg), hyp[h]["comparator"]): h
+             for h in ("H1a", "H1b")}
+    pairs[h2b_secondary_pair(cfg)] = "H2b (secondary)"
+    return pairs
+
+
 def delta_table(summ: pd.DataFrame, cfg: dict) -> pd.DataFrame:
-    """One row per comparison x budget: dFP@K and dFP per 100 alerts with CIs and the verdict."""
+    """One row per comparison x budget: dFP@K and dFP per 100 alerts with CIs. Only the
+    hypothesis rows (primary budget) get the frozen criterion's verdict; every other row is
+    labelled descriptive (statistics.descriptive_cis: no criterion applied) and carries the
+    position of its CI as two booleans only."""
     s = summ.set_index(["budget", "stat"])
+    primary_budget = cfg["budgets"]["ulb"]["primary"]
+    hyp_pairs = hypothesis_pairs(cfg)
     rows = []
     for b in summ.budget.unique():
         for a, comp in comparisons(cfg):
             d, d100 = s.loc[(b, f"d:{a}-{comp}")], s.loc[(b, f"d100:{a}-{comp}")]
             ens, calib, agg = parse_key(a)
+            role = hyp_pairs.get((a, comp)) if b == primary_budget else None
             rows.append({"budget": b, "method": a, "ensemble": ens, "calib": calib, "agg": agg,
                          "comparator": comp, "d_fp": d.estimate, "d_fp_ci_low": d.ci_low,
                          "d_fp_ci_high": d.ci_high, "d_fp_per_100": d100.estimate,
                          "d_fp_per_100_ci_low": d100.ci_low, "d_fp_per_100_ci_high": d100.ci_high,
-                         "verdict": SUPPORT if bool(d.supported) else NULL,
+                         "role": role or "descriptive",
+                         "verdict": criterion(d.ci_high) if role else DESCRIPTIVE,
+                         "ci_entirely_below_0": bool(d.ci_high < 0),
                          "ci_entirely_above_0": bool(d.ci_low > 0)})
     return pd.DataFrame(rows)
+
+
+def criterion(ci_high: float) -> str:
+    """statistics.criterion: 'fewer false alarms' only if the whole CI lies below 0."""
+    return SUPPORT if bootstrap.fewer_false_alarms(ci_high) else NULL
 
 
 # ---------------------------------------------------------------- hypotheses
@@ -318,7 +343,7 @@ def hypotheses(deltas: pd.DataFrame, cfg: dict, n_resamples: int) -> pd.DataFram
         if f"ULB {primary_budget}" not in spec["budget"]:
             raise ValueError(f"{h}: ULB budget in the file is not {primary_budget}")
         r = d.loc[(method_key(spec["ensemble"], calib, agg), spec["comparator"])]
-        holds = r.verdict == SUPPORT
+        holds = criterion(r.d_fp_ci_high) == SUPPORT
         rule = spec["supported_if"]
         if rule == "the criterion holds on both datasets":
             status = "pending IEEE-CIS" if holds else "not supported (fails on ULB; needs both)"
@@ -348,7 +373,7 @@ def _hyp_row(h, ens, alias, comp, r, budget, calib, agg, status, n_resamples) ->
             "comparison": f"{name} vs {comp_name}", "d_fp": r.d_fp, "d_fp_ci_low": r.d_fp_ci_low,
             "d_fp_ci_high": r.d_fp_ci_high, "d_fp_per_100": r.d_fp_per_100,
             "d_fp_per_100_ci_low": r.d_fp_per_100_ci_low,
-            "d_fp_per_100_ci_high": r.d_fp_per_100_ci_high, "verdict": r.verdict,
+            "d_fp_per_100_ci_high": r.d_fp_per_100_ci_high, "verdict": criterion(r.d_fp_ci_high),
             "ci_entirely_above_0": r.ci_entirely_above_0, "status": status,
             "resamples": n_resamples}
 

@@ -93,7 +93,10 @@ python -m thesis.e3_ulb --quick     # 20 resamples, prints the hypotheses, write
   upper bound) and regret; paired transaction-level bootstrap CIs (`thesis.bootstrap`) for every ensemble x
   fusion config against the three comparators and for the H2b secondary check. H1a / H1b report the ULB part
   and what it implies for the two-dataset rule. The frozen criterion has two outcomes; a CI entirely above 0
-  is only flagged (`ci_entirely_above_0`), descriptively.
+  is only flagged (`ci_entirely_above_0`), descriptively. In `e3_ulb_deltas.csv` only the hypothesis rows
+  (`role` H1a, H1b, H2b secondary, primary budget) carry the criterion's verdict; every other row is
+  "descriptive, no criterion applied" (`statistics.descriptive_cis`) with `ci_entirely_below_0` /
+  `ci_entirely_above_0` as plain booleans.
 - Threshold mode: day-1 quantile thresholds applied unchanged to day 2 (alert count, alert rate vs 1 - q,
   FPR, recall, precision).
 
