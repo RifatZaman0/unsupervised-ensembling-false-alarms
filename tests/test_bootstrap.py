@@ -161,6 +161,21 @@ def test_alert_rate_deviation():
     assert out["d:E-bench-median_single"] == pytest.approx(-0.01)
 
 
+def test_alert_rate_deviation_is_taken_per_seed_then_averaged():
+    """evaluation.seeds: the measure is computed for each IForest seed, then the seed mean.
+    Seed 0 alerts 3% and seed 1 none: per seed |0.03 - 0.01| = 0.02 and |0 - 0.01| = 0.01,
+    mean 0.015; the deviation of the seed-mean rate (1.5%) would be 0.005."""
+    q = 0.99
+    alerts = {n: np.zeros((1, 200), bool) for n in SINGLES}
+    alerts["IForest"] = np.zeros((2, 200), bool)
+    alerts["IForest"][0, [0, 1, 2, 100, 101, 102]] = True
+    alerts["E-bench"] = np.zeros((2, 200), bool)
+    win = [np.arange(100), np.arange(100, 200)]
+    out = bs.alert_rate_statistic(alerts, q, SINGLES, "E-bench")(win)
+    assert out["dev:IForest"] == pytest.approx((0.02 + 0.01) / 2)
+    assert out["dev:E-bench"] == pytest.approx(0.01)
+
+
 def test_moving_blocks_and_spearman():
     rng = np.random.default_rng(0)
     for _ in range(20):

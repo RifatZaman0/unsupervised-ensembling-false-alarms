@@ -75,6 +75,28 @@ set PYTHONPATH=src            (PowerShell: $env:PYTHONPATH="src")
 - KNN / LOF fit sample: `config.KNN_LOF_MAX_FIT_ROWS` (30,000) rows, drawn with the split seed or
   `config.KNN_LOF_SAMPLE_SEED` (0) when the split has none; it never applies to ADBench.
 
+## E3 on ULB (after freeze-v1)
+
+```
+python -m thesis.e3_ulb             # ~15 min; results/{tables,figures}/e3_ulb/
+python -m thesis.e3_ulb --quick     # 20 resamples, prints the hypotheses, writes nothing
+```
+
+- Refuses to run unless tag `freeze-v1` exists and `git diff freeze-v1 -- frozen_config.json` is empty, and
+  checks that the code's settings equal the frozen ones (`e3_ulb.check_code_matches`). Ensembles, fusion
+  configs, budgets, quantiles, seeds, bootstrap and hypotheses are all read from the file.
+- Fitting stage (`e3_ulb.fit_stage`): gets the day-1 / day-2 split with its labels replaced by zeros; z-score,
+  detectors, calibrators and fused training scores use day-1 rows only. Thresholds come from each method's own
+  day-1 training scores. Day-2 labels are used only by the metrics. ULB scores are cached under the same
+  cache key as ADBench (`cache/scores/<key>/ulb/`).
+- Budget mode: seed means, median single, default IForest, oracle-best single (chosen with test labels: an
+  upper bound) and regret; paired transaction-level bootstrap CIs (`thesis.bootstrap`) for every ensemble x
+  fusion config against the three comparators and for the H2b secondary check. H1a / H1b report the ULB part
+  and what it implies for the two-dataset rule. The frozen criterion has two outcomes; a CI entirely above 0
+  is only flagged (`ci_entirely_above_0`), descriptively.
+- Threshold mode: day-1 quantile thresholds applied unchanged to day 2 (alert count, alert rate vs 1 - q,
+  FPR, recall, precision).
+
 - `detectors.score(name, X_fit, X_score, seed)` → (training scores, new-row scores); PyOD defaults, inputs
   z-scored with training statistics. Deviations: ECOD is a train-only re-implementation (PyOD's ECOD scores new
   rows together with the training rows, so scores depend on the batch); PCA drops zero-variance components
