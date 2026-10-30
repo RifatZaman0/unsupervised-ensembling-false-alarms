@@ -58,8 +58,13 @@ set PYTHONPATH=src            (PowerShell: $env:PYTHONPATH="src")
 .venv\Scripts\python.exe -m thesis.zero_variance  # constant training scores: ADBench score cache + ULB day 1
                                                   # (no labels read, day 2 not scored) -> results/tables/setup/
 .venv\Scripts\python.exe -m thesis.export_setup   # Experimental Setup tables (datasets, hyperparameters,
-                                                  # versions, runtimes; CSV + booktabs) -> results/tables/setup/
+                                                  # versions, runtimes; CSV + booktabs; duplicates.tex from
+                                                  # tables/datasets/duplicates.csv) -> results/tables/setup/
 ```
+
+- Every exported `.tex` table must compile in the TDK preamble (`tdk/main.tex` in the project folder) and fit
+  its 16 cm text block: `tests/test_tdk_exports.py` (needs XeLaTeX; `thesis.texcheck`). Wide tables use a
+  narrower `\tabcolsep` (`booktabs(..., colsep=...)`), never different content.
 
 - `frozen_config.json` holds the ensembles (E-bench primary, E-lit = E-bench, E-bench-5% and E-all secondary),
   fusion configs, budgets and thresholds for ULB and IEEE-CIS, rules, data handling, metrics, seed handling,
@@ -80,6 +85,10 @@ set PYTHONPATH=src            (PowerShell: $env:PYTHONPATH="src")
 ```
 python -m thesis.e3_ulb             # ~15 min; results/{tables,figures}/e3_ulb/
 python -m thesis.e3_ulb --quick     # 20 resamples, prints the hypotheses, writes nothing
+python -m thesis.e3_ulb_figures     # redraw the two figures (16 cm wide, text >= 8 pt) and rewrite the
+                                    # three .tex tables from the e3_ulb CSVs; nothing recomputed
+python -m thesis.e3_ulb_lof         # label-free LOF diagnosis (day-1 vs day-2 k-NN distances, feature
+                                    # mean shift; Class never read) -> results/tables/e3_ulb/lof_diagnosis.*
 ```
 
 - Refuses to run unless tag `freeze-v1` exists and `git diff freeze-v1 -- frozen_config.json` is empty, and
