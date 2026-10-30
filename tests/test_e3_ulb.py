@@ -227,7 +227,7 @@ def deltas_for(cfg, h1a_hi: float, h1b_hi: float) -> pd.DataFrame:
                      "calib": calib, "agg": agg, "comparator": comp, "d_fp": hi - 1,
                      "d_fp_ci_low": hi - 2, "d_fp_ci_high": hi, "d_fp_per_100": 0.0,
                      "d_fp_per_100_ci_low": 0.0, "d_fp_per_100_ci_high": 0.0,
-                     "verdict": e3_ulb.SUPPORT if hi < 0 else e3_ulb.NULL,
+                     "verdict": "stale",          # must not be read: recomputed from the CI
                      "ci_entirely_above_0": hi - 2 > 0})
     return pd.DataFrame(rows)
 
@@ -269,7 +269,7 @@ def test_only_hypothesis_rows_get_a_verdict(cfg):
     rows = []
     for b in (0.001, pb):
         for i, (a, comp) in enumerate(e3_ulb.comparisons(cfg)):
-            lo, hi = [(-2.0, -0.1), (0.5, 3.0), (-1.0, 0.0)][i % 3]
+            lo, hi = [(-2.0, -0.1), (0.5, 3.0), (-1.0, 0.0), (-1.0, 0.5)][i % 4]
             for pre in ("d", "d100"):
                 rows.append({"budget": b, "stat": f"{pre}:{a}-{comp}", "estimate": (lo + hi) / 2,
                              "ci_low": lo, "ci_high": hi,
@@ -278,6 +278,13 @@ def test_only_hypothesis_rows_get_a_verdict(cfg):
     assert len(d) == 2 * len(e3_ulb.comparisons(cfg))
     hyp = d[d.role != "descriptive"]
     assert sorted(hyp.role) == ["H1a", "H1b", "H2b (secondary)"] and (hyp.budget == pb).all()
+    assert {(r.method, r.comparator): r.role for r in hyp.itertuples()} == {
+        ("E-bench:minmax+mean", bootstrap.MEDIAN): "H1a",
+        ("E-bench:minmax+mean", bootstrap.DEFAULT_IFOREST): "H1b",
+        ("E-bench-5%:minmax+mean", "E-bench:minmax+mean"): "H2b (secondary)"}
+    # the four CI patterns include one crossing 0, where ci_low > 0 and ci_high > 0 differ
+    crossing = (d.d_fp_ci_low < 0) & (d.d_fp_ci_high > 0)
+    assert crossing.any() and not d.loc[crossing, "ci_entirely_above_0"].any()
     assert set(d.loc[d.role == "descriptive", "verdict"]) == {e3_ulb.DESCRIPTIVE}
     for r in hyp.itertuples():
         assert r.verdict == (e3_ulb.SUPPORT if r.d_fp_ci_high < 0 else e3_ulb.NULL)
