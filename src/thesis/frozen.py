@@ -14,7 +14,10 @@ from thesis.paths import FROZEN_CONFIG
 
 FRAUD_DATA = ("ulb", "ieee_cis")
 REQUIRED = ("detectors", "ensembles", "fusion", "budgets", "thresholds", "rules", "data",
-            "metrics", "evaluation", "statistics", "hypotheses", "baselines")
+            "metrics", "evaluation", "statistics", "hypotheses", "context", "baselines")
+HYPOTHESES = ("H1a", "H1b", "H2b", "H3a", "H3b")
+BOOTSTRAP_KEYS = ("resamples", "ci", "seed", "rng", "paired", "scores", "per_resample")
+EVALUATION_KEYS = ("seeds", "median_single", "regret", "ieee_cis_windows", "pool_on_fraud_data")
 ROLES = ("primary", "secondary", "alias")
 
 
@@ -65,9 +68,31 @@ def validate(cfg: dict) -> None:
     p = hyp["primary_fusion"]
     if hyp["primary_ensemble"] != primary[0] or (p["calibration"], p["aggregation"]) != pairs[0]:
         raise ValueError("hypotheses must use the primary ensemble and the primary fusion")
+    missing = [h for h in HYPOTHESES if h not in hyp]
+    if missing:
+        raise ValueError(f"hypotheses {missing} missing")
     for h in ("H1a", "H1b", "H3a"):
         if hyp[h]["ensemble"] != primary[0]:
             raise ValueError(f"{h} must test the primary ensemble {primary[0]}")
+    if not hyp["H3b"]["status"].startswith("exploratory"):
+        raise ValueError("H3b is exploratory: no hypothesis decision")
+    ci = hyp["H3b"]["ci"]
+    if not (isinstance(ci["block_weeks"], int) and ci["block_weeks"] >= 1
+            and isinstance(ci["resamples"], int) and ci["resamples"] > 0):
+        raise ValueError("H3b CI needs an integer block length and number of resamples")
+    for key, need in (("bootstrap", BOOTSTRAP_KEYS), ("evaluation", EVALUATION_KEYS)):
+        block = boot if key == "bootstrap" else cfg["evaluation"]
+        missing = [k for k in need if k not in block]
+        if missing:
+            raise ValueError(f"{key}: {missing} missing")
+    if "multiplicity" not in cfg["statistics"]:
+        raise ValueError("statistics: the multiplicity rule must be stated")
+    adtk = cfg["context"]["adtk"]["detectors"]
+    if set(adtk) != {"LevelShiftAD", "QuantileAD"}:
+        raise ValueError(f"context.adtk: detectors {sorted(adtk)}")
+    qa = adtk["QuantileAD"]
+    if not 0 < qa["low"] < qa["high"] < 1:
+        raise ValueError(f"QuantileAD bounds {qa['low']}, {qa['high']}")
 
 
 def load(path: Path = FROZEN_CONFIG) -> dict:

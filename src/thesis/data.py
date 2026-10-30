@@ -207,6 +207,42 @@ def split_ulb(X: np.ndarray | None = None, y: np.ndarray | None = None,
     return split
 
 
+# ---------------------------------------------------------------- IEEE-CIS time windows
+# The rules of frozen_config.json data.ieee_cis.time and hypotheses.H3b.windows. They use
+# TransactionDT only, never a label.
+
+IEEE_DAY_SECONDS = 86_400
+IEEE_MONTH_DAYS = 30
+IEEE_LAST_MONTH = 6          # month 6 = day 150 onwards (absorbs the tail)
+IEEE_TEST_MONTHS = (2, 3, 4, 5, 6)
+IEEE_WEEK_START_DAY = 30     # weekly H3b windows start with the first test day
+IEEE_WEEK_DAYS = 7
+
+
+def ieee_cis_day(transaction_dt: np.ndarray) -> np.ndarray:
+    """Day 0, 1, ... counted in 24-hour blocks from the first TransactionDT."""
+    t = np.asarray(transaction_dt, dtype=np.float64)
+    return np.floor((t - t.min()) / IEEE_DAY_SECONDS).astype(np.int64)
+
+
+def ieee_cis_month(day: np.ndarray) -> np.ndarray:
+    """Month 1 = days 0-29, month m = days 30(m-1) to 30m-1, month 6 = day 150 onwards."""
+    return np.minimum(np.asarray(day) // IEEE_MONTH_DAYS + 1, IEEE_LAST_MONTH)
+
+
+def ieee_cis_week(day: np.ndarray) -> np.ndarray:
+    """H3b week 0, 1, ...: 7-day blocks from day 30; a final partial week joins the last block.
+
+    Month-1 days (before day 30) get -1: they are the reference, not a window.
+    """
+    day = np.asarray(day)
+    n_full = (int(day.max()) - IEEE_WEEK_START_DAY + 1) // IEEE_WEEK_DAYS
+    if n_full < 1:
+        raise ValueError("fewer than 7 test days: no complete H3b week")
+    w = np.minimum((day - IEEE_WEEK_START_DAY) // IEEE_WEEK_DAYS, n_full - 1)
+    return np.where(day < IEEE_WEEK_START_DAY, -1, w)
+
+
 # ---------------------------------------------------------------- preprocessing
 
 @dataclass(frozen=True)

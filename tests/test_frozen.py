@@ -6,7 +6,8 @@ import pandas as pd
 import pyod
 import pytest
 
-from thesis import config, data, detectors, e2, e2_figures, ebench, frozen, fusion, metrics, scorecache
+from thesis import (bootstrap, config, data, detectors, e2, e2_figures, ebench, frozen, fusion,
+                    metrics, scorecache)
 from thesis.paths import FROZEN_CONFIG, TABLES
 
 
@@ -53,6 +54,23 @@ def test_statistics_and_hypotheses(cfg):
     assert (h["primary_fusion"]["calibration"], h["primary_fusion"]["aggregation"]) == fusion.PRIMARY
     assert h["H1a"]["comparator"] == "median_single" and h["H1b"]["comparator"] == "default_iforest"
     assert "degenerate" in h["H2b"]["primary"] and "E-bench-5%" in h["H2b"]["secondary"]
+    assert "month-stratified day-block" in boot["ieee_cis"]
+    assert "median single" in boot["per_resample"] and "oracle" in boot["per_resample"]
+    assert "default_rng(seed)" in boot["rng"] and boot["code"] == "thesis.bootstrap"
+    assert "adbench" not in cfg["statistics"]                  # not fraud data; still open
+    assert "at most 5%" in cfg["statistics"]["multiplicity"]
+    assert "sum over m = 2..6 of FP@K_m" in cfg["evaluation"]["ieee_cis_windows"]
+    assert "all six detectors" in cfg["evaluation"]["pool_on_fraud_data"]
+    assert "non-inferiority is not tested" in h["H2b"]["secondary"]
+    assert h["H3b"]["status"].startswith("exploratory") and "freeze-v2 features" in h["H3b"]["drift_share"]
+    assert "three distinct ensembles" in cfg["evaluation"]["budget_mode_runs"]
+    assert "both KNN and LOF" in cfg["detectors"]["knn_lof_fallback"]
+    adtk = cfg["context"]["adtk"]["detectors"]
+    assert adtk["LevelShiftAD"] == {"window": 5, "c": 6.0, "side": "both",
+                                    "fit": "fit_detect on days 30 onwards"}
+    assert (adtk["QuantileAD"]["low"], adtk["QuantileAD"]["high"]) == (0.01, 0.99)
+    assert "alerts / transactions that day" in cfg["context"]["adtk"]["series"]
+    assert "months 2-6" in cfg["context"]["score_drift"]
     assert "no calibration window" in cfg["data"]["ieee_cis"]["split"]
     assert "freeze-v2" in cfg["data"]["ieee_cis"]["features_freeze_v2"]
 
@@ -75,6 +93,16 @@ def test_matches_the_code(cfg):
     assert cfg["rules"]["k_rule"] == config.Protocol().k_rule
     p = cfg["fusion"]["primary"]
     assert (p["calibration"], p["aggregation"]) == fusion.PRIMARY
+    boot, h3b = cfg["statistics"]["bootstrap"], cfg["hypotheses"]["H3b"]
+    assert (boot["resamples"], boot["seed"]) == (bootstrap.RESAMPLES, bootstrap.SEED)
+    assert boot["ci"].startswith(f"{bootstrap.CI_LEVEL:.0%}")
+    assert (h3b["ci"]["block_weeks"], h3b["ci"]["resamples"]) == (bootstrap.H3B_BLOCK_WEEKS,
+                                                                  bootstrap.RESAMPLES)
+    assert f"from day {data.IEEE_WEEK_START_DAY}" in h3b["windows"]
+    assert f"month 6 = day {(data.IEEE_LAST_MONTH - 1) * data.IEEE_MONTH_DAYS} onwards"         in cfg["data"]["ieee_cis"]["time"]
+    import adtk, evidently
+    assert cfg["context"]["adtk"]["version"].startswith(f"adtk {adtk.__version__} ")
+    assert f"evidently {evidently.__version__} " in h3b["drift_share"]
 
 
 def test_ebench_follows_the_rule(cfg):
@@ -109,6 +137,32 @@ def test_ebench_follows_the_rule(cfg):
     lambda c: c["statistics"]["bootstrap"].update(resamples=0),
     lambda c: c["hypotheses"]["H1a"].update(ensemble="E-all"),
     lambda c: c.pop("hypotheses"),
+    # one break per check (re-review 2026-10-29, H9)
+    lambda c: c["ensembles"].update({"E-x": {"members": ["IForest", "PCA", "KNN"],
+                                             "role": "alias", "alias_of": "E-lit"}}),
+    lambda c: c["ensembles"]["E-lit"].update(alias_of="E-unknown"),
+    lambda c: c["data"].pop("ieee_cis"),
+    lambda c: c["statistics"]["bootstrap"].update(seed="0"),
+    lambda c: c["statistics"]["bootstrap"].pop("ieee_cis"),
+    lambda c: c["hypotheses"].update(primary_ensemble="E-all"),
+    lambda c: c["hypotheses"].update(primary_fusion={"calibration": "zscore", "aggregation": "mean"}),
+    lambda c: c["hypotheses"]["H1b"].update(ensemble="E-all"),
+    lambda c: c["hypotheses"]["H3a"].update(ensemble="E-all"),
+    lambda c: c["statistics"]["bootstrap"].update(resamples=1000.0),
+    lambda c: c["ensembles"]["E-bench"].update(role="secondary"),
+    # checks added with H1-H4 and the H3b / E5 decisions (2026-10-30)
+    lambda c: c.pop("context"),
+    lambda c: c["hypotheses"].pop("H3b"),
+    lambda c: c["hypotheses"]["H3b"].update(status="confirmatory"),
+    lambda c: c["hypotheses"]["H3b"]["ci"].update(block_weeks=4.0),
+    lambda c: c["hypotheses"]["H3b"]["ci"].update(resamples=0),
+    lambda c: c["statistics"]["bootstrap"].pop("per_resample"),
+    lambda c: c["statistics"]["bootstrap"].pop("rng"),
+    lambda c: c["evaluation"].pop("ieee_cis_windows"),
+    lambda c: c["evaluation"].pop("pool_on_fraud_data"),
+    lambda c: c["statistics"].pop("multiplicity"),
+    lambda c: c["context"]["adtk"]["detectors"].pop("QuantileAD"),
+    lambda c: c["context"]["adtk"]["detectors"]["QuantileAD"].update(low=0.99, high=0.01),
 ])
 def test_validate_rejects_broken_configs(cfg, breaks):
     bad = copy.deepcopy(cfg)

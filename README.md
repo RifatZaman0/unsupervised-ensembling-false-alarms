@@ -63,9 +63,15 @@ set PYTHONPATH=src            (PowerShell: $env:PYTHONPATH="src")
 
 - `frozen_config.json` holds the ensembles (E-bench primary, E-lit = E-bench, E-bench-5% and E-all secondary),
   fusion configs, budgets and thresholds for ULB and IEEE-CIS, rules, data handling, metrics, seed handling,
-  bootstrap, the hypotheses with their criterion, and the baselines. IEEE-CIS feature preprocessing is the only
-  part fixed later (freeze-v2, from month-1 data without labels). `thesis.frozen.load()` reads and checks it;
-  `tests/test_frozen.py` checks that it agrees with the code and that E-bench follows its rule.
+  bootstrap, the hypotheses with their criterion (H3b and the E5 context exploratory), and the baselines.
+  IEEE-CIS feature preprocessing is the only part fixed later (freeze-v2, from month-1 data without labels).
+  `thesis.frozen.load()` reads and checks it; `tests/test_frozen.py` checks that it agrees with the code and
+  that E-bench follows its rule.
+- `thesis.bootstrap`: the paired bootstrap of the frozen config. ULB resamples day-2 rows; IEEE-CIS resamples
+  days within each of months 2-6 (month-stratified) and sums FP@K over the months, each month with its own K.
+  In every resample K, the seed means, the median single and the oracle are recomputed from fixed scores.
+  `numpy.random.default_rng(0)`, one stream. IEEE-CIS day / month / H3b week rules: `data.ieee_cis_day`,
+  `ieee_cis_month`, `ieee_cis_week`.
 - KNN / LOF fit sample: `config.KNN_LOF_MAX_FIT_ROWS` (30,000) rows, drawn with the split seed or
   `config.KNN_LOF_SAMPLE_SEED` (0) when the split has none; it never applies to ADBench.
 

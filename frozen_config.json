@@ -19,7 +19,7 @@
   "ecod": "train-only re-implementation: ECDFs and skewness signs fixed at fit time (PyOD 3.6.7 ECOD is batch-dependent)",
   "knn_lof_training_scores": "leave-one-out (a row is not its own neighbour); PyOD's own behaviour",
   "knn_lof_fit_sample": {"max_rows": 30000, "seed": "split seed; 0 when the split has none (ULB, IEEE-CIS)", "rows_outside_sample": "scored like new rows"},
-  "knn_lof_fallback": "IEEE-CIS only: if one KNN or LOF scoring pass takes more than 30 minutes, the fit sample becomes 10,000 rows (Master Plan, Risks); disclosed if used",
+  "knn_lof_fallback": "IEEE-CIS only: if one KNN or LOF scoring pass of the month-1 training scores takes more than 30 minutes, the fit sample of both KNN and LOF becomes 10,000 rows (seed 0) for every month (Master Plan, Risks); decided before any test month is scored; disclosed if used",
   "iforest_seeds": [0, 1, 2, 3, 4],
   "score_direction": "higher = more anomalous for every detector"
  },
@@ -58,7 +58,7 @@
   "common": {
    "rule": "threshold = numpy.quantile(training scores, q) (method 'linear'); alert if score > threshold",
    "fitted_on": "each method's own training scores (fused training scores for ensembles); never refitted",
-   "methods": "the six singles (IForest per seed) and the four ensembles; all six fusion configs for ensembles, the primary one reported first",
+   "methods": "the six singles (IForest per seed) and the three distinct ensembles (E-bench = E-lit, E-bench-5%, E-all); all six fusion configs for ensembles, the primary one reported first",
    "reported": ["alert_count", "alert_rate", "fpr", "recall", "precision"]
   },
   "ulb": {"training_score_quantiles": [0.998, 0.995], "fitted_on": "day 1", "applied_to": "day 2", "check": "alert rate and FPR on day 2 vs 1 - q"},
@@ -99,7 +99,7 @@
   "labels": "never passed to fit(), scalers, imputers, calibrators or thresholds"
  },
 
- "score_cache": {"key": "21ba8c24b9", "pyod": "3.6.7", "note": "key = hash of detector params, KNN/LOF fit sample size, preprocessing, PyOD version and the ECOD variant"},
+ "score_cache": {"key": "21ba8c24b9", "pyod": "3.6.7", "note": "the ADBench score cache; key = hash of detector params, KNN/LOF fit sample size, preprocessing, PyOD version and the ECOD variant"},
 
  "metrics": {
   "budget": ["fp_at_k", "precision_at_k", "recall_at_k"],
@@ -111,24 +111,30 @@
 
  "evaluation": {
   "seeds": "every method containing IForest is run with seeds 0-4 (an ensemble is fused once per seed, other members unchanged); its metrics are the mean over the 5 seeds",
-  "budget_mode_runs": "the four ensembles x six fusion configs and the six singles, at every budget of the dataset",
+  "budget_mode_runs": "the three distinct ensembles (E-bench = E-lit, E-bench-5%, E-all) x six fusion configs and the six singles, at every budget of the dataset",
   "median_single": "median of the six singles' seed-mean FP@K at the same budget and window (with six values: the mean of the 3rd and 4th)",
-  "regret": "FP@K(method) - FP@K(oracle_best_single), same budget and window"
+  "regret": "FP@K(method) - FP@K(oracle_best_single), same budget and window",
+  "ieee_cis_windows": "every budget-mode comparison on IEEE-CIS (H1a, H1b, the H2b secondary check, the descriptive CIs, regret) is one decision over months 2-6: the statistic is the sum over m = 2..6 of FP@K_m with K_m = ceil(budget * n_m) per month; dFP = sum_m FP@K_m(ensemble) - sum_m FP@K_m(comparator), also reported per 100 alerts (dFP / sum_m K_m * 100); the median single and the oracle are taken on these sums. Per-month values are reported descriptively. ULB has one window (day 2): dFP per 100 alerts = dFP / K * 100",
+  "pool_on_fraud_data": "all six detectors on all fraud data; the Master Plan's cut of LOF on fraud data does not apply (KNN/LOF runtime: detectors.knn_lof_fallback)"
  },
 
  "statistics": {
-  "delta": "dFP@K = FP@K(ensemble) - FP@K(comparator), same budget and window",
+  "delta": "dFP@K = FP@K(ensemble) - FP@K(comparator), same budget and window; on IEEE-CIS the sums over months 2-6 of evaluation.ieee_cis_windows",
   "bootstrap": {
    "ulb": "transaction-level: day-2 rows resampled with replacement, same size",
-   "ieee_cis": "day-block: whole days of the test window resampled with replacement",
+   "ieee_cis": "month-stratified day-block: within each of months 2-6, that month's number of days drawn with replacement, each drawn day with all its rows; every month's FP@K recomputed, then summed. H3a uses the same resamples",
    "resamples": 1000,
-   "ci": "95% percentile interval",
+   "ci": "95% percentile interval: the 2.5th and 97.5th percentiles of the resampled values",
    "paired": "the same resample for every method and seed",
    "seed": 0,
-   "scores": "fixed; nothing is refitted; K recomputed from the resample size"
+   "rng": "numpy.random.default_rng(seed): one stream, fixed draw order (resample by resample; IEEE-CIS months in the order 2-6)",
+   "scores": "fixed; nothing is refitted; K recomputed from the resample size",
+   "per_resample": "a. one set of indices is drawn (ULB: day-2 transactions; IEEE-CIS: days within months), the same for every method; b. K is recomputed from the resample size; c. FP@K is computed from the fixed scores for every method and every IForest seed (rows drawn more than once are ties, handled by the expected-value tie rule); d. seed means are taken; e. the median single (median of the six singles) and the oracle (their minimum) are recomputed within the resample; f. every difference is computed",
+   "code": "thesis.bootstrap"
   },
   "criterion": "'fewer false alarms' only if the 95% CI of dFP@K lies entirely below 0; otherwise 'no difference shown'",
-  "adbench": "Friedman + Nemenyi CD (alpha 0.05); Wilcoxon signed-rank for ensemble vs median single, Holm-corrected"
+  "multiplicity": "no correction; each criterion is a one-sided 2.5% test; H1b 'at least one of two datasets' has an error rate of at most 5%",
+  "descriptive_cis": "every distinct ensemble x six fusion configs x {median_single, default_iforest, oracle_best_single} x every budget, from the same resamples; descriptive, no criterion applied"
  },
 
  "hypotheses": {
@@ -136,9 +142,25 @@
   "primary_fusion": {"calibration": "minmax", "aggregation": "mean"},
   "H1a": {"ensemble": "E-bench", "comparator": "median_single", "budget": "primary budget of each dataset (ULB 0.002, IEEE-CIS 0.02)", "datasets": ["ULB", "IEEE-CIS"], "supported_if": "the criterion holds on both datasets"},
   "H1b": {"ensemble": "E-bench", "comparator": "default_iforest", "budget": "primary budget of each dataset (ULB 0.002, IEEE-CIS 0.02)", "datasets": ["ULB", "IEEE-CIS"], "supported_if": "the criterion holds on at least one dataset"},
-  "H2b": {"primary": "degenerate: the 2% rule selected E-lit, so E-bench vs E-lit has dFP@K = 0 by identity (benchmark selection confirms the literature default); reported as such", "secondary": "E-bench-5% vs E-lit at the primary budget of each dataset, same criterion; descriptive only"},
-  "H3a": {"ensemble": "E-bench", "comparator": "median of the six singles' values of the same measure (IForest seed mean)", "dataset": "IEEE-CIS", "quantile": 0.99, "measure": "mean over months 2-6 of |monthly alert rate - (1 - q)|", "supported_if": "the 95% day-block bootstrap CI of the difference (ensemble - median single) lies entirely below 0"},
-  "other_results": "E-all, E-bench-5%, the sensitivity fusion configs, the other budgets and quantiles: descriptive, no claim"
+  "H2b": {"primary": "degenerate: the 2% rule selected E-lit, so E-bench vs E-lit has dFP@K = 0 by identity (benchmark selection confirms the literature default); reported as such", "secondary": "E-bench-5% vs E-lit at the primary budget of each dataset, same statistic and criterion (a superiority check; non-inferiority is not tested); descriptive only"},
+  "H3a": {"ensemble": "E-bench", "comparator": "median of the six singles' values of the same measure (IForest seed mean)", "dataset": "IEEE-CIS", "quantile": 0.99, "measure": "mean over months 2-6 of |monthly alert rate - (1 - q)|", "resampling": "the month-stratified day-block resamples of statistics.bootstrap.ieee_cis; every method's measure, the median single's value and the difference are recomputed in each", "supported_if": "the 95% day-block bootstrap CI of the difference (ensemble - median single) lies entirely below 0"},
+  "H3b": {"status": "exploratory: reported as an association, no hypothesis decision", "dataset": "IEEE-CIS", "windows": "weekly: 7-day blocks from day 30; a final partial week is merged into the last block (thesis.data.ieee_cis_week); weekly windows are used for H3b only", "drift_share": "Evidently DataDriftPreset with its default statistical tests, evidently 0.7.23 (requirements-lock.txt); reference = month 1; current = each week; columns = the freeze-v2 features; drift share = share of columns flagged as drifted", "fpr": "weekly FPR of E-bench (min-max + mean) in threshold mode at the frozen 0.99 training quantile, IForest seed mean", "statistic": "Spearman rho across weeks between drift share and FPR", "ci": {"method": "moving-block bootstrap over weeks", "block_weeks": 4, "resamples": 1000, "level": "95% percentile", "rng": "numpy.random.default_rng(0), one stream", "undefined": "resamples with an undefined rho are dropped and counted"}},
+  "other_results": "E-all, E-bench-5%, the sensitivity fusion configs, the other budgets and quantiles, per-month values, the E6 robustness runs and everything in the context section: descriptive, no claim"
+ },
+
+ "context": {
+  "status": "exploratory (E5): descriptive, no hypothesis decision",
+  "days": "the IEEE-CIS day rule of data.ieee_cis.time",
+  "adtk": {
+   "version": "adtk 0.6.2 (requirements-lock.txt)",
+   "series": "daily alert rate (alerts / transactions that day) of E-bench (min-max + mean) and of each of the six singles, threshold mode at the frozen 0.99 training quantile, IForest seed mean; the daily transaction count is reported alongside",
+   "detectors": {
+    "LevelShiftAD": {"window": 5, "c": 6.0, "side": "both", "fit": "fit_detect on days 30 onwards"},
+    "QuantileAD": {"low": 0.01, "high": 0.99, "fit": "fitted on the 30 month-1 days, applied to days 30 onwards"}
+   },
+   "flagged_day": "a day flagged by either detector; each detector is also reported on its own"
+  },
+  "score_drift": "Evidently default statistical test on E-bench's fused score (min-max + mean); reference = month 1, current = each of months 2-6; one test per IForest seed (0-4); each seed's result and the share of seeds flagged per month are reported"
  },
 
  "baselines": {
