@@ -99,3 +99,13 @@ def test_variant_fitted_has_every_set_once_and_comparisons_point_to_the_static_e
     assert pairs and all(c == "{IForest+KNN+LOF}" for _, c in pairs)
     assert len(pairs) == len(set(pairs))
     assert ":" not in "".join(v.test)                       # read as plain methods by e3_ulb
+
+
+def test_each_variant_is_compared_with_its_own_static_ensemble():
+    ens = {"E-bench": ["IForest", "PCA", "KNN"], "E-all": ["IForest", "PCA", "KNN", "LOF"]}
+    tabs = {"guard": r_tab({"IForest": 0.9, "PCA": 0.9, "KNN": 4.0, "LOF": 41.0})}
+    d = e.decisions(tabs, ens)
+    pairs = set(e.comparisons(d, ens))
+    assert ("{IForest+PCA}", "{IForest+PCA+KNN}") in pairs              # from E-bench
+    assert ("{IForest+PCA}", "{IForest+PCA+KNN+LOF}") in pairs          # from E-all
+    assert all(c in {"{IForest+PCA+KNN}", "{IForest+PCA+KNN+LOF}"} for _, c in pairs)
