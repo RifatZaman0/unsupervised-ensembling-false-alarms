@@ -181,6 +181,7 @@ def recompute_far(Z1: np.ndarray, Z_far: np.ndarray, k: int) -> np.ndarray:
 
 L1_QUANTILES = (0.5, 0.9, 0.99, 0.995, 0.998, 0.999, 1.0)
 L1_MEMBERS = ("LOF", "KNN")
+L1_X_FLOOR_QUANTILE = 0.001                         # histogram x-axis: lower scores go in the first bin
 
 
 def l1_table(scores: dict[str, tuple[np.ndarray, np.ndarray]], n_day1: int,
@@ -211,13 +212,14 @@ def l1_figure(scores: dict[str, tuple[np.ndarray, np.ndarray]], quantiles, path_
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    width_cm, height_cm, pt = 16.0, 7.2, 8
+    width_cm, height_cm, pt = 16.0, 7.8, 8
     plt.rcParams.update({"font.size": pt, "pdf.fonttype": 42})
     fig, axes = plt.subplots(1, 2, figsize=(width_cm / 2.54, height_cm / 2.54),
                              layout="constrained")
     for ax, det in zip(axes, L1_MEMBERS):
         s1, s2 = scores[det][0][0], scores[det][1][0]
-        floor = min(s1[s1 > 0].min(), s2[s2 > 0].min())
+        # the x-axis starts at the pooled 0.1% quantile; lower scores are counted in the first bin
+        floor = float(np.quantile(np.concatenate([s1, s2]), L1_X_FLOOR_QUANTILE))
         lo, hi = np.log10(floor), np.log10(max(s1.max(), s2.max()))
         bins = np.logspace(lo, hi, 121)
         for s, label, colour in ((s1, "day 1 (fit)", "#1f4e79"), (s2, "day 2", "#c0504d")):
@@ -235,12 +237,14 @@ def l1_figure(scores: dict[str, tuple[np.ndarray, np.ndarray]], quantiles, path_
         for side in ("top", "right"):
             ax.spines[side].set_visible(False)
     axes[0].set_ylabel("share of rows per bin (%, log scale)", fontsize=pt)
-    axes[1].legend(fontsize=pt, frameon=False, loc="upper right")
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, fontsize=pt, frameon=False, loc="outside lower center", ncols=4)
     FIG_OUT.mkdir(parents=True, exist_ok=True)
     for ext in ("pdf", "png"):
         fig.savefig(f"{path_stem}.{ext}", dpi=300)
     plt.close(fig)
-    return {"width_cm": width_cm, "height_cm": height_cm, "min_font_pt": pt, "bins": 120}
+    return {"width_cm": width_cm, "height_cm": height_cm, "min_font_pt": pt, "bins": 120,
+            "x_axis_starts_at_pooled_quantile": L1_X_FLOOR_QUANTILE}
 
 
 # ---------------------------------------------------------------- output
