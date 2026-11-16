@@ -70,6 +70,11 @@ set PYTHONPATH=src            (PowerShell: $env:PYTHONPATH="src")
   fusion configs, budgets and thresholds for ULB and IEEE-CIS, rules, data handling, metrics, seed handling,
   bootstrap, the hypotheses with their criterion (H3b and the E5 context exploratory), and the baselines.
   IEEE-CIS feature preprocessing is the only part fixed later (freeze-v2, from month-1 data without labels).
+  It is `frozen_features_v2.json`: the rule and the list of 26 features with their column types, written by
+  `python -m thesis.ieee_features` from the month-1 rows of `train_transaction.csv` (the `isFraud` column and
+  the feature values of months 2-6 are not read). `thesis.ieee_features.FeatureRule` fits the medians and
+  frequency maps on the fit window and applies them to later rows; `tests/test_ieee_features.py` checks that
+  the file equals the rule applied to the real month 1.
   `thesis.frozen.load()` reads and checks it; `tests/test_frozen.py` checks that it agrees with the code and
   that E-bench follows its rule.
 - `thesis.bootstrap`: the paired bootstrap of the frozen config. ULB resamples day-2 rows; IEEE-CIS resamples

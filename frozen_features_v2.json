@@ -1,0 +1,345 @@
+{
+ "name": "freeze-v2",
+ "scope": "IEEE-CIS feature preprocessing only (frozen_config.json data.ieee_cis.features_freeze_v2). Nothing else of freeze-v1 changes.",
+ "source": "Kaggle ieee-fraud-detection, train_transaction.csv",
+ "fitted_on": "month 1 (days 0-29) only, without labels: the isFraud column is not read and no feature value of months 2-6 is loaded when the rule is fixed",
+ "rule": {
+  "candidates": "all columns except TransactionID, isFraud, TransactionDT and V1-V339",
+  "keep_if": "month-1 missing share < 0.2 and more than one value in month 1 (missing counts as a value)",
+  "categorical": "the columns the data description lists as categorical: ProductCD, card1, card2, card3, card4, card5, card6, addr1, addr2, P_emaildomain, R_emaildomain, M1, M2, M3, M4, M5, M6, M7, M8, M9",
+  "categorical_encoding": "frequency encoding: value -> share of fit-window rows with that value; missing is its own value; a value not seen in the fit window -> 0",
+  "numerical": "missing -> fit-window median",
+  "log1p": [
+   "TransactionAmt"
+  ],
+  "then": "z-score with fit-window statistics (freeze-v1 preprocessing)",
+  "parameters": "the fit window is month 1 for the evaluation of months 2-6; a run that fits on a part of month 1 uses that part only. Medians and frequency maps are computed from the fit window by thesis.ieee_features.FeatureRule.fit and applied unchanged to every later row. The feature list is the same in every run",
+  "rows": "every row of every month is kept: no row filter, no deduplication",
+  "drift_columns": "H3b (frozen_config.json hypotheses.H3b.drift_share) uses the raw columns of the feature list, before encoding and imputation, with the column types listed here"
+ },
+ "month1": {
+  "rows_month1": 134339,
+  "rows_file": 590540,
+  "days_month1": 30,
+  "transaction_dt_first": 86400,
+  "transaction_dt_last_month1": 2678390
+ },
+ "n_candidates": 52,
+ "n_features": 26,
+ "features": [
+  {
+   "name": "TransactionAmt",
+   "type": "numerical",
+   "transform": "log1p, median imputation",
+   "missing_share_month1": 0.0
+  },
+  {
+   "name": "ProductCD",
+   "type": "categorical",
+   "transform": "frequency encoding",
+   "missing_share_month1": 0.0
+  },
+  {
+   "name": "card1",
+   "type": "categorical",
+   "transform": "frequency encoding",
+   "missing_share_month1": 0.0
+  },
+  {
+   "name": "card2",
+   "type": "categorical",
+   "transform": "frequency encoding",
+   "missing_share_month1": 0.013466
+  },
+  {
+   "name": "card3",
+   "type": "categorical",
+   "transform": "frequency encoding",
+   "missing_share_month1": 2.2e-05
+  },
+  {
+   "name": "card4",
+   "type": "categorical",
+   "transform": "frequency encoding",
+   "missing_share_month1": 6e-05
+  },
+  {
+   "name": "card5",
+   "type": "categorical",
+   "transform": "frequency encoding",
+   "missing_share_month1": 0.005441
+  },
+  {
+   "name": "card6",
+   "type": "categorical",
+   "transform": "frequency encoding",
+   "missing_share_month1": 5.2e-05
+  },
+  {
+   "name": "addr1",
+   "type": "categorical",
+   "transform": "frequency encoding",
+   "missing_share_month1": 0.104638
+  },
+  {
+   "name": "addr2",
+   "type": "categorical",
+   "transform": "frequency encoding",
+   "missing_share_month1": 0.104638
+  },
+  {
+   "name": "P_emaildomain",
+   "type": "categorical",
+   "transform": "frequency encoding",
+   "missing_share_month1": 0.146875
+  },
+  {
+   "name": "C1",
+   "type": "numerical",
+   "transform": "median imputation",
+   "missing_share_month1": 0.0
+  },
+  {
+   "name": "C2",
+   "type": "numerical",
+   "transform": "median imputation",
+   "missing_share_month1": 0.0
+  },
+  {
+   "name": "C3",
+   "type": "numerical",
+   "transform": "median imputation",
+   "missing_share_month1": 0.0
+  },
+  {
+   "name": "C4",
+   "type": "numerical",
+   "transform": "median imputation",
+   "missing_share_month1": 0.0
+  },
+  {
+   "name": "C5",
+   "type": "numerical",
+   "transform": "median imputation",
+   "missing_share_month1": 0.0
+  },
+  {
+   "name": "C6",
+   "type": "numerical",
+   "transform": "median imputation",
+   "missing_share_month1": 0.0
+  },
+  {
+   "name": "C7",
+   "type": "numerical",
+   "transform": "median imputation",
+   "missing_share_month1": 0.0
+  },
+  {
+   "name": "C8",
+   "type": "numerical",
+   "transform": "median imputation",
+   "missing_share_month1": 0.0
+  },
+  {
+   "name": "C9",
+   "type": "numerical",
+   "transform": "median imputation",
+   "missing_share_month1": 0.0
+  },
+  {
+   "name": "C10",
+   "type": "numerical",
+   "transform": "median imputation",
+   "missing_share_month1": 0.0
+  },
+  {
+   "name": "C11",
+   "type": "numerical",
+   "transform": "median imputation",
+   "missing_share_month1": 0.0
+  },
+  {
+   "name": "C12",
+   "type": "numerical",
+   "transform": "median imputation",
+   "missing_share_month1": 0.0
+  },
+  {
+   "name": "C13",
+   "type": "numerical",
+   "transform": "median imputation",
+   "missing_share_month1": 0.0
+  },
+  {
+   "name": "C14",
+   "type": "numerical",
+   "transform": "median imputation",
+   "missing_share_month1": 0.0
+  },
+  {
+   "name": "D1",
+   "type": "numerical",
+   "transform": "median imputation",
+   "missing_share_month1": 0.0
+  }
+ ],
+ "dropped": [
+  {
+   "name": "dist1",
+   "type": "numerical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.701159
+  },
+  {
+   "name": "dist2",
+   "type": "numerical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.912631
+  },
+  {
+   "name": "R_emaildomain",
+   "type": "categorical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.617565
+  },
+  {
+   "name": "D2",
+   "type": "numerical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.586821
+  },
+  {
+   "name": "D3",
+   "type": "numerical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.577584
+  },
+  {
+   "name": "D4",
+   "type": "numerical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.456368
+  },
+  {
+   "name": "D5",
+   "type": "numerical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.652841
+  },
+  {
+   "name": "D6",
+   "type": "numerical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.861887
+  },
+  {
+   "name": "D7",
+   "type": "numerical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.934755
+  },
+  {
+   "name": "D8",
+   "type": "numerical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.781783
+  },
+  {
+   "name": "D9",
+   "type": "numerical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.781783
+  },
+  {
+   "name": "D10",
+   "type": "numerical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.313498
+  },
+  {
+   "name": "D11",
+   "type": "numerical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.71269
+  },
+  {
+   "name": "D12",
+   "type": "numerical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.884866
+  },
+  {
+   "name": "D13",
+   "type": "numerical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.896419
+  },
+  {
+   "name": "D14",
+   "type": "numerical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.881204
+  },
+  {
+   "name": "D15",
+   "type": "numerical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.336738
+  },
+  {
+   "name": "M1",
+   "type": "categorical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.692814
+  },
+  {
+   "name": "M2",
+   "type": "categorical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.692814
+  },
+  {
+   "name": "M3",
+   "type": "categorical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.692814
+  },
+  {
+   "name": "M4",
+   "type": "categorical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.576214
+  },
+  {
+   "name": "M5",
+   "type": "categorical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.69699
+  },
+  {
+   "name": "M6",
+   "type": "categorical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.472916
+  },
+  {
+   "name": "M7",
+   "type": "categorical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.84452
+  },
+  {
+   "name": "M8",
+   "type": "categorical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.84452
+  },
+  {
+   "name": "M9",
+   "type": "categorical",
+   "reason": "missing share >= 0.2",
+   "missing_share_month1": 0.84452
+  }
+ ]
+}
