@@ -218,8 +218,10 @@ def l1_figure(scores: dict[str, tuple[np.ndarray, np.ndarray]], quantiles, path_
                              layout="constrained")
     for ax, det in zip(axes, L1_MEMBERS):
         s1, s2 = scores[det][0][0], scores[det][1][0]
-        # the x-axis starts at the pooled 0.1% quantile; lower scores are counted in the first bin
-        floor = float(np.quantile(np.concatenate([s1, s2]), L1_X_FLOOR_QUANTILE))
+        # the x-axis starts at the 0.1% quantile of the pooled positive scores (KNN is 0 for rows
+        # with five or more identical fit rows); lower scores are counted in the first bin
+        pooled = np.concatenate([s1, s2])
+        floor = float(np.quantile(pooled[pooled > 0], L1_X_FLOOR_QUANTILE))
         lo, hi = np.log10(floor), np.log10(max(s1.max(), s2.max()))
         bins = np.logspace(lo, hi, 121)
         for s, label, colour in ((s1, "day 1 (fit)", "#1f4e79"), (s2, "day 2", "#c0504d")):
