@@ -175,9 +175,15 @@ def frozen_dict(tab: pd.DataFrame, info: dict) -> dict:
             "numerical": "missing -> month-1 median",
             "log1p": list(LOG1P),
             "then": "z-score with month-1 statistics (freeze-v1 preprocessing)",
-            "parameters": "medians and frequency maps are computed from month-1 rows by "
-                          "thesis.ieee_features.FeatureRule.fit and applied unchanged to "
-                          "months 2-6",
+            "parameters": "medians and frequency maps are computed from the fit window by "
+                          "thesis.ieee_features.FeatureRule.fit and applied unchanged to every "
+                          "later row: month 1 for the evaluation of months 2-6; a run that "
+                          "fits on a part of month 1 computes them from that part only. The "
+                          "feature list is the same in every run",
+            "rows": "every row of every month is kept: no row filter, no deduplication",
+            "drift_columns": "H3b (frozen_config.json hypotheses.H3b.drift_share) uses the raw "
+                             "columns of the feature list, before encoding and imputation, "
+                             "with the column types listed here",
         },
         "month1": info,
         "n_candidates": int(len(tab)), "n_features": int(len(kept)),
