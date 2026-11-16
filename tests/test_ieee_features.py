@@ -1,5 +1,6 @@
 """IEEE-CIS feature rule (thesis.ieee_features): month 1 only, no labels, the frozen list."""
 import copy
+import json
 
 import numpy as np
 import pandas as pd
@@ -44,6 +45,22 @@ def test_month_1_is_read_without_the_label_and_without_later_rows(csv):
                     "transaction_dt_first": 86_400,
                     "transaction_dt_last_month1": 86_400 + 30 * DAY - 1}
     assert month1["TransactionAmt"].max() == 100.0          # the 1e6 rows are later rows
+
+
+def test_the_label_column_is_never_read(csv, monkeypatch):
+    calls, read_csv = [], pd.read_csv
+
+    def spy(*args, **kwargs):
+        calls.append(kwargs)
+        return read_csv(*args, **kwargs)
+
+    monkeypatch.setattr(f.pd, "read_csv", spy)
+    f.load_month1(csv)
+    with_rows = [k for k in calls if k.get("nrows") != 0]   # nrows=0: the header only
+    assert len(with_rows) == 2 and len(calls) == 3
+    for k in with_rows:
+        assert "usecols" in k and "isFraud" not in k["usecols"]
+    assert with_rows[0]["usecols"] == ["TransactionDT"] and with_rows[1]["nrows"] == 100
 
 
 def test_month_1_count_needs_a_sorted_file():
@@ -97,7 +114,10 @@ def test_parameters_come_from_month_1_only(csv):
     assert (later[:, 3] == 0.5).all()                       # a.com keeps its month-1 share
     assert (X[50:65, 3] == 0.15).all()                      # missing is its own value
     assert (X[:10, 4] == rule.medians["C1"]).all()          # imputed with the month-1 median
-    assert (later[:, 2] == 0.2).all()                       # card1 as float or int: same level
+    assert (later[:, 2] == 0.2).all()
+    # card1 read as float (e.g. a later file part with a missing value): same levels as int
+    X_float = rule.transform(full.assign(card1=full["card1"].astype(float)))
+    assert np.array_equal(X_float, X) and (X_float[:, 2] == 0.2).all()
     with pytest.raises(AssertionError):
         f.FeatureRule.fit(full, feats)                      # a frame with the label is refused
 
@@ -117,7 +137,7 @@ def test_validate_rejects_broken_files(csv):
 
     broken(lambda c: c.update(name="freeze-v1"))
     broken(lambda c: c.update(n_features=4))
-    broken(lambda c: c["features"].append(dict(c["features"][0])))
+    broken(lambda c: (c["features"].append(dict(c["features"][0])), c.update(n_features=6)))
     broken(lambda c: c["features"][0].update(name="isFraud"))
     broken(lambda c: c["features"][0].update(name="TransactionDT"))
     broken(lambda c: c["features"][0].update(name="V12"))
@@ -125,6 +145,18 @@ def test_validate_rejects_broken_files(csv):
     broken(lambda c: c["features"][4].update(type="text"))
     broken(lambda c: c["features"][4].update(missing_share_month1=0.2))
     broken(lambda c: c["dropped"].append({"name": "C1"}))
+
+
+def test_load_frozen_checks_the_file(csv, tmp_path):
+    month1, info = f.load_month1(csv)
+    cfg = f.frozen_dict(f.selection_table(month1), info)
+    good, bad = tmp_path / "good.json", tmp_path / "bad.json"
+    good.write_text(json.dumps(cfg), encoding="utf-8")
+    assert f.load_frozen(good) == cfg
+    cfg["features"][0]["name"] = "V7"
+    bad.write_text(json.dumps(cfg), encoding="utf-8")
+    with pytest.raises(ValueError):
+        f.load_frozen(bad)
 
 
 @pytest.mark.skipif(not f.RAW.exists(), reason="IEEE-CIS raw file not downloaded")
