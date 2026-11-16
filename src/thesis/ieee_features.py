@@ -169,17 +169,17 @@ def frozen_dict(tab: pd.DataFrame, info: dict) -> dict:
                        "month 1 (missing counts as a value)",
             "categorical": "the columns the data description lists as categorical: "
                            + ", ".join(CATEGORICAL),
-            "categorical_encoding": "frequency encoding: value -> share of month-1 rows with "
-                                    "that value; missing is its own value; a value not seen in "
-                                    "month 1 -> 0",
-            "numerical": "missing -> month-1 median",
+            "categorical_encoding": "frequency encoding: value -> share of fit-window rows "
+                                    "with that value; missing is its own value; a value not "
+                                    "seen in the fit window -> 0",
+            "numerical": "missing -> fit-window median",
             "log1p": list(LOG1P),
-            "then": "z-score with month-1 statistics (freeze-v1 preprocessing)",
-            "parameters": "medians and frequency maps are computed from the fit window by "
+            "then": "z-score with fit-window statistics (freeze-v1 preprocessing)",
+            "parameters": "the fit window is month 1 for the evaluation of months 2-6; a "
+                          "run that fits on a part of month 1 uses that part only. Medians and "
+                          "frequency maps are computed from the fit window by "
                           "thesis.ieee_features.FeatureRule.fit and applied unchanged to every "
-                          "later row: month 1 for the evaluation of months 2-6; a run that "
-                          "fits on a part of month 1 computes them from that part only. The "
-                          "feature list is the same in every run",
+                          "later row. The feature list is the same in every run",
             "rows": "every row of every month is kept: no row filter, no deduplication",
             "drift_columns": "H3b (frozen_config.json hypotheses.H3b.drift_share) uses the raw "
                              "columns of the feature list, before encoding and imputation, "
