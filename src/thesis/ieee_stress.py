@@ -1,7 +1,7 @@
 """Temporal stress test on IEEE-CIS month 1 (training window only, label-free).
 
-    python -m thesis.ieee_stress    # writes results/tables/ieee_cis/stress_month1{,_rules}.csv,
-                                    # .meta.json and stress_month1.md
+    python -m thesis.ieee_stress    # writes results/tables/ieee_cis/stress_month1{,_rules,
+                                    # _alert_days,_feature_tails}.csv, .meta.json and .md
 
 Fit window: month 1, days 0-20 (weeks 1-3). Scored slice: days 21-29 (the rest of month 1,
 "week 4"); days 21-27 (exactly seven days) are reported as a sensitivity check. Only month-1
@@ -70,6 +70,37 @@ def rule_table(tab: pd.DataFrame, cs=CS) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def alert_days(scores, day_fit: np.ndarray, day_scored: np.ndarray, quantiles) -> pd.DataFrame:
+    """Alerts per day at each member's fit-window threshold, for fit-window and scored rows
+    (IForest: mean over seeds). Shows whether a threshold is set by a burst on a few days."""
+    rows = []
+    for m, (s_fit, s_sc) in scores.items():
+        for q in quantiles:
+            thr = np.quantile(s_fit, q, axis=1, method="linear")
+            for part, s, d in (("fit", s_fit, day_fit), ("scored", s_sc, day_scored)):
+                hits = s > thr[:, None]
+                for dd in np.unique(d):
+                    rows.append({"member": m, "q": q, "part": part, "day": int(dd),
+                                 "rows": int((d == dd).sum()),
+                                 "alerts": float(hits[:, d == dd].sum(axis=1).mean())})
+    return pd.DataFrame(rows)
+
+
+def feature_tails(X_fit: np.ndarray, X_scored: np.ndarray, names) -> pd.DataFrame:
+    """Per feature (after the freeze-v2 transform): share of rows outside the fit-window 0.5%
+    and 99.5% quantiles, the scored-slice mean shift and the SD ratio, in fit-window SD."""
+    sd = np.where(X_fit.std(axis=0) > 0, X_fit.std(axis=0), 1.0)
+    rows = []
+    for j, n in enumerate(names):
+        lo, hi = np.quantile(X_fit[:, j], [0.005, 0.995])
+        rows.append({"feature": n,
+                     "fit_outside_share": float(((X_fit[:, j] < lo) | (X_fit[:, j] > hi)).mean()),
+                     "scored_outside_share": float(((X_scored[:, j] < lo) | (X_scored[:, j] > hi)).mean()),
+                     "mean_shift_sd": float((X_scored[:, j].mean() - X_fit[:, j].mean()) / sd[j]),
+                     "sd_ratio": float(X_scored[:, j].std() / sd[j])})
+    return pd.DataFrame(rows)
+
+
 def summary_md(tab: pd.DataFrame, rules: pd.DataFrame, meta: dict) -> str:
     lines = ["# IEEE-CIS month 1: temporal stress test (label-free, training window only)", "",
              f"Commit `{meta['commit']}` · `{meta['command']}` · created {meta['created_utc']}", "",
@@ -97,6 +128,8 @@ def summary_md(tab: pd.DataFrame, rules: pd.DataFrame, meta: dict) -> str:
             row = g[g.c == c].iloc[0]
             cells += ["P" if row.one_sided_pass else "F", "P" if row.two_sided_pass else "F"]
         lines.append(f"| {m} | {q:g} | {basis} | " + " | ".join(cells) + " |")
+    lines += ["", "Fit-window and scored alerts per day: `stress_month1_alert_days.csv`. Per-feature "
+              "tails, mean shift and SD ratio: `stress_month1_feature_tails.csv`."]
     return "\n".join(lines) + "\n"
 
 
@@ -126,6 +159,8 @@ def main(argv: list[str]) -> None:
                      stress_table({m: (a, b[:, seven]) for m, (a, b) in scores.items()},
                                   quantiles, sens_name)], ignore_index=True)
     rules = rule_table(tab)
+    days = alert_days(scores, day[fit], day[scored], quantiles)
+    tails = feature_tails(X_fit, X_scored, names)
     meta = {**state, "command": "python -m thesis.ieee_stress",
             "created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "labels_read": False, "rows_read": "month 1 only (ieee_features.load_month1)",
@@ -147,6 +182,8 @@ def main(argv: list[str]) -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     tab.assign(commit=state["commit"]).to_csv(OUT / "stress_month1.csv", index=False)
     rules.assign(commit=state["commit"]).to_csv(OUT / "stress_month1_rules.csv", index=False)
+    days.assign(commit=state["commit"]).to_csv(OUT / "stress_month1_alert_days.csv", index=False)
+    tails.assign(commit=state["commit"]).to_csv(OUT / "stress_month1_feature_tails.csv", index=False)
     (OUT / "stress_month1.meta.json").write_text(json.dumps(meta, indent=1) + "\n", encoding="utf-8")
     (OUT / "stress_month1.md").write_text(summary_md(tab, rules, meta), encoding="utf-8")
     print((OUT / "stress_month1.md").read_text(encoding="utf-8"))

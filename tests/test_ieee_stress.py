@@ -61,6 +61,27 @@ def test_rule_table_one_and_two_sided():
     assert len(rules) == 7 * 3 * 2
 
 
+def test_alert_days_counts_alerts_at_the_fit_threshold_per_day():
+    s_fit = np.vstack([np.arange(10.0), np.arange(10.0) * 2])      # q 0.8: 7.2 and 14.4
+    s_sc = np.vstack([np.array([8.0, 1.0, 9.0]), np.array([8.0, 1.0, 20.0])])
+    d = s.alert_days({"A": (s_fit, s_sc)}, np.repeat([0, 1], 5), np.array([21, 21, 22]), [0.8])
+    fit = d[d.part == "fit"].set_index("day")
+    assert fit.alerts.to_dict() == {0: 0.0, 1: 2.0} and fit.rows.to_dict() == {0: 5, 1: 5}
+    sc = d[d.part == "scored"].set_index("day")
+    assert sc.alerts.to_dict() == {21: 0.5, 22: 1.0}               # mean over the two seeds
+
+
+def test_feature_tails_use_fit_window_quantiles_and_sd():
+    rng = np.random.default_rng(0)
+    X_fit = rng.normal(size=(20_000, 2))
+    X_sc = np.column_stack([rng.normal(size=5000) * 0.1, rng.normal(3.0, 2.0, size=5000)])
+    t = s.feature_tails(X_fit, X_sc, ["a", "b"]).set_index("feature")
+    assert t.loc["a", "fit_outside_share"] == pytest.approx(0.01, abs=0.001)
+    assert t.loc["a", "scored_outside_share"] == 0.0 and t.loc["a", "sd_ratio"] == pytest.approx(0.1, rel=0.05)
+    assert t.loc["b", "mean_shift_sd"] == pytest.approx(3.0, abs=0.1)
+    assert t.loc["b", "sd_ratio"] == pytest.approx(2.0, rel=0.05)
+
+
 @pytest.mark.skipif(not ieee_features.RAW.exists(), reason="IEEE-CIS raw file not downloaded")
 def test_real_month_1_split_sizes():
     month1, info = ieee_features.load_month1()
