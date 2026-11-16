@@ -61,6 +61,12 @@ def test_r_is_the_later_alert_rate_over_the_target_with_fit_slice_thresholds():
     assert b.r == pytest.approx(1.0) and a.fit_alert_rate == pytest.approx(0.1)
     assert a.r_over_median == pytest.approx(3.0 / 2.0)      # median of r = (1, 3)
     assert (a.n_fit, a.n_scored, a.n_seeds) == (1000, 1000, 1)
+    # three members whose median (1) and mean (5/3) differ
+    s_one = np.concatenate([np.full(900, 10.0), np.full(100, 950.0)])[None, :]
+    tab3 = lof_diag.stress_table({"A": (s_fit, s_late), "B": (s_fit, s_fit), "C": (s_fit, s_one)},
+                                 [0.9], "L2b").set_index("member")
+    assert tab3.r.to_dict() == pytest.approx({"A": 3.0, "B": 1.0, "C": 1.0})
+    assert tab3.loc["A", "r_over_median"] == pytest.approx(3.0)
 
 
 def test_r_per_seed_uses_each_seeds_own_threshold():
