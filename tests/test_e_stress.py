@@ -92,7 +92,9 @@ def test_variant_fitted_has_every_set_once_and_comparisons_point_to_the_static_e
     tabs = {"guard": r_tab({"IForest": 0.9, "PCA": 0.9, "KNN": 1.2, "LOF": 41.0})}
     d = e.decisions(tabs, ens)
     v = e.variant_fitted(f, d, ens)
-    assert set(v.test) == {e.set_name(k.split("+")) for k in d.kept} | {"{IForest+KNN+LOF}"}
+    assert set(v.test) == ({e.set_name(k.split("+")) for k in d.kept} | {"{IForest+KNN+LOF}"}
+                           | set(f.singles))
+    assert v.test["KNN"] is f.test["KNN"]                   # singles kept unchanged
     pairs = e.comparisons(d, ens)
     assert pairs and all(c == "{IForest+KNN+LOF}" for _, c in pairs)
     assert len(pairs) == len(set(pairs))

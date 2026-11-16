@@ -112,8 +112,10 @@ def fuse_members(train: dict[str, np.ndarray], test: dict[str, np.ndarray],
 
 
 def variant_fitted(base: Fitted, dec: pd.DataFrame, ensembles: dict[str, list[str]]) -> Fitted:
-    """The member sets that some rule produces, plus every static ensemble, as one Fitted."""
-    train, test = {}, {}
+    """The six singles (plain names, as references), every static ensemble and every member set
+    that some rule produces, as one Fitted."""
+    train = {m: base.train[m] for m in base.singles}
+    test = {m: base.test[m] for m in base.singles}
     sets = {tuple(ensembles[e]) for e in ensembles} | {tuple(k.split("+")) for k in dec.kept}
     for kept in sorted(sets, key=lambda s: (len(s), s)):
         key = set_name(list(kept))
