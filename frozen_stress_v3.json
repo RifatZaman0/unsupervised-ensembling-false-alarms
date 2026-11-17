@@ -68,7 +68,7 @@
   "multiplicity": "no correction (as freeze-v1): H4a and H4b are each one-sided 2.5% tests; H4c and H4e are no-harm checks"
  },
 
- "if_no_member_breaks": "if the guard keeps every member of an ensemble on every test day, E-guard equals the static ensemble and dFP = 0 by identity: H4b is then reported as 'not testable: no member broke', H4c and H4e as descriptive, H4d as descriptive (as always); H4a is decided as stated (it needs no break). The member-day table of r is reported in every case",
+ "if_no_member_breaks": "if the guard keeps every member of an ensemble on every test day, E-guard equals the static ensemble and dFP = 0 by identity: H4b is then reported as 'not testable: no member broke' and H4c as descriptive; H4d is descriptive in every case; H4a is decided as stated (it needs no break); H4e is decided as stated, and then compares static E-bench with the chosen single. The member-day table of r is reported in every case",
 
  "removed": {
   "relative_to_median": "rules on r relative to the median member are not used: on ULB they removed KNN, the only member on target (results/tables/e3_ulb/stress/stress_deltas.csv), and in IEEE-CIS month 1 the median r was 0.039, so they flagged the members on target (results/tables/ieee_cis/stress_month1.csv)",
