@@ -32,6 +32,7 @@ import numpy as np
 import pandas as pd
 
 from thesis import data, detectors, frozen, fusion, metrics, scorecache
+from thesis.bootstrap import percentile_ci
 from thesis.e3_ulb import distinct_ensembles, fit_stage, fit_thresholds, load_split
 from thesis.export_datasets import git_state
 from thesis.paths import TABLES
@@ -40,6 +41,10 @@ OUT = TABLES / "robust_fusion"
 CONFIGS = (("minmax", "mean"), ("minmax", "median"), ("percentile", "mean"), ("percentile", "median"))
 ROBUST = ("percentile", "median")
 ULB_Q = (0.999, 0.998, 0.995)
+FROZEN = ("minmax", "mean")
+TRIPLES = tuple(combinations(detectors.DETECTORS, 3))       # all 20 three-member ensembles
+COST_MARGIN = 0.05                                          # H4r-cost: relative increase <= +5%
+ZERO_ALERTS = 0.5                                           # an empty window counts as 0.5 alert
 
 
 def config_name(calib: str, agg: str) -> str:
@@ -136,6 +141,170 @@ def bound_check(train: dict, test: dict, members, broken, q: float) -> pd.DataFr
                      "healthy_rates": ";".join(f"{x}={r:.6f}" for x, r in zip(healthy, rates)),
                      "alert_without_event": int((alert & ~event).sum())})
     return pd.DataFrame(rows)
+
+
+# ---------------------------------------------------------------- H4r over the 20 triples
+
+def triple_name(members) -> str:
+    return "+".join(members)
+
+
+def block_alerts(train_f: np.ndarray, test_f: np.ndarray, block: np.ndarray, q: float) -> tuple[np.ndarray, np.ndarray]:
+    """Alerts (summed over seeds) and rows x seeds per block (sorted block ids) at the frozen
+    threshold of the fused training scores."""
+    thr = fit_thresholds(train_f, q)
+    a = np.atleast_2d(test_f) > thr[:, None]
+    ids = np.unique(block)
+    return (np.array([a[:, block == b].sum() for b in ids], dtype=np.float64),
+            np.array([(block == b).sum() * len(thr) for b in ids], dtype=np.float64))
+
+
+def deviation(A: np.ndarray, N: np.ndarray, M: np.ndarray, q: float, w=None) -> float:
+    """Mean over windows (columns of M, blocks x windows) of |log(window alert rate / (1 - q))|;
+    w = block multiplicities of a resample; a window without an alert counts as ZERO_ALERTS."""
+    w = np.ones(len(A)) if w is None else np.asarray(w, dtype=np.float64)
+    a, n = (A * w) @ M, (N * w) @ M
+    return float(np.mean(np.abs(np.log(np.maximum(a, ZERO_ALERTS) / (n * round(1 - q, 12))))))
+
+
+def triple_deviations(train: dict, test: dict, block: np.ndarray, M: np.ndarray, q: float,
+                      C: np.ndarray, triples=TRIPLES) -> tuple[pd.DataFrame, np.ndarray]:
+    """Per triple: D under the robust and the frozen fusion and dD = D(robust) - D(frozen),
+    point and per resample (rows of C). Returns (table, resamples x triples matrix of dD)."""
+    rows, boot = [], []
+    for members in triples:
+        an = {}
+        for name, cfg in (("robust", ROBUST), ("frozen", FROZEN)):
+            tr, te = fuse_set(train, test, members, *cfg)
+            an[name] = block_alerts(tr, te, block, q)
+        d_r, d_f = deviation(*an["robust"], M, q), deviation(*an["frozen"], M, q)
+        rows.append({"triple": triple_name(members), "q": q, "D_robust": d_r, "D_frozen": d_f,
+                     "dD": d_r - d_f})
+        boot.append([deviation(*an["robust"], M, q, w) - deviation(*an["frozen"], M, q, w) for w in C])
+    return pd.DataFrame(rows), np.array(boot).T
+
+
+def mean_ci(point: float, boot: np.ndarray) -> dict:
+    lo, hi = percentile_ci(boot)
+    return {"estimate": float(point), "ci_low": lo, "ci_high": hi,
+            "ci_entirely_below_0": bool(hi < 0), "ci_entirely_above_0": bool(lo > 0)}
+
+
+def cost_ratio(fp_robust: np.ndarray, fp_frozen: np.ndarray, C: np.ndarray | None = None):
+    """H4r-cost: (mean over triples of total FP, robust) / (same, frozen) - 1. fp_*: blocks x
+    triples of FP@K per block (fixed per-block K); C: resamples x blocks multiplicities."""
+    if C is None:
+        return float(fp_robust.sum(axis=0).mean() / fp_frozen.sum(axis=0).mean() - 1)
+    return (C @ fp_robust).mean(axis=1) / (C @ fp_frozen).mean(axis=1) - 1
+
+
+def cost_passes(ci_high: float, margin: float = COST_MARGIN) -> bool:
+    return bool(ci_high <= margin)
+
+
+def fp_rows(S: np.ndarray, y: np.ndarray, k: int) -> np.ndarray:
+    """FP@K of every row of S (score vectors) at once, with the expected-value tie rule of
+    metrics.tp_at_k (identical results, tested)."""
+    n = S.shape[1]
+    kth = np.partition(S, n - k, axis=1)[:, n - k]
+    above, tied = S > kth[:, None], S == kth[:, None]
+    yy = np.asarray(y, dtype=np.float64)
+    tp = above @ yy + (k - above.sum(axis=1)) * (tied @ yy) / tied.sum(axis=1)
+    return k - tp
+
+
+class SortedScores:
+    """FP@K of fixed score vectors under block resamples, without materialising each resample.
+
+    Every vector is sorted once (descending). A resample gives each row a weight (how often its
+    block was drawn); FP@K of the resampled multiset follows from the shortest prefix whose weights
+    reach K, with the expected-value tie rule of metrics.tp_at_k on the tie group at the K-th score
+    (identical to metrics.tp_at_k on the materialised resample, tested)."""
+
+    def __init__(self, S: np.ndarray, y: np.ndarray, block: np.ndarray, prefix: int = 20_000):
+        order = np.argsort(-S, axis=1, kind="stable")
+        self.L = min(prefix, S.shape[1])
+        self.vals = np.take_along_axis(S, order, axis=1)
+        self.y = np.asarray(y, dtype=np.float64)[order]
+        self.block = np.asarray(block)[order]
+
+    def fp(self, w_block: np.ndarray, k: int) -> np.ndarray:
+        out = np.empty(len(self.vals))
+        for i in range(len(self.vals)):
+            for L in (self.L, self.vals.shape[1]):
+                v, yy = self.vals[i, :L], self.y[i, :L]
+                w = w_block[self.block[i, :L]].astype(np.float64)
+                cum = np.cumsum(w)
+                if cum[-1] < k:
+                    continue
+                kth = v[np.searchsorted(cum, k)]
+                if L < self.vals.shape[1] and v[-1] >= kth:
+                    continue                      # tie group may run past the prefix
+                above, tied = v > kth, v == kth
+                n_above, tp_above = w[above].sum(), (w * yy)[above].sum()
+                tp = tp_above + (k - n_above) * (w * yy)[tied].sum() / w[tied].sum()
+                out[i] = k - tp
+                break
+        return out
+
+
+def ulb_triples(train: dict, test: dict, y: np.ndarray, hours: np.ndarray, budgets, resamples: int,
+                cost_budget: float, seed: int = 0) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Development check on ULB day 2 (developed on ULB): H4r(i) and H4r-cost over the 20
+    triples. Day 2 is one window, so the 'monthly' deviation is the day-2 deviation; the
+    resamples draw the 24 hours with replacement (the block analogue of the day-block
+    bootstrap). Cost: FP@K of the whole resampled day (K recomputed, as in E3)."""
+    M = np.ones((len(np.unique(hours)), 1))
+    rng = np.random.default_rng(seed)
+    n_h = len(np.unique(hours))
+    picks = [rng.integers(0, n_h, n_h) for _ in range(resamples)]
+    C = np.vstack([np.bincount(p, minlength=n_h) for p in picks])
+    per_triple, summary = [], []
+    for q in ULB_Q:
+        tab, boot = triple_deviations(train, test, hours, M, q, C)
+        per_triple.append(tab)
+        summary.append({"part": "H4r(i) threshold", "q": q, "statistic": "mean over 20 triples of dD",
+                        **mean_ci(tab.dD.mean(), boot.mean(axis=1))})
+    rows_of = [np.flatnonzero(hours == h) for h in np.unique(hours)]
+    full = np.arange(len(y))
+    S, owner = [], []                       # every seed row of every fused triple, stacked
+    for t, m in enumerate(TRIPLES):
+        for c, cfg in enumerate((ROBUST, FROZEN)):
+            for r in np.atleast_2d(fuse_set(train, test, m, *cfg)[1]):
+                S.append(r)
+                owner.append((t, c))
+    S, owner = np.vstack(S), np.array(owner)
+
+    block_ids = np.searchsorted(np.unique(hours), hours)
+    sorted_scores = SortedScores(S, y, block_ids)
+
+    def mean_pairs(fp: np.ndarray) -> np.ndarray:
+        out = np.zeros((len(TRIPLES), 2))
+        for (t, c) in set(map(tuple, owner)):
+            out[t, c] = fp[(owner[:, 0] == t) & (owner[:, 1] == c)].mean()
+        return out
+
+    def fp_pair(idx, b) -> np.ndarray:
+        """triples x 2 (robust, frozen) seed-mean FP@K on rows idx."""
+        return mean_pairs(fp_rows(S[:, idx], y[idx], metrics.budget_k(b, len(idx))))
+
+    for b in budgets:
+        pr = fp_pair(full, b)
+        row = {"part": "H4r-cost budget", "budget": b,
+               "statistic": "mean FP@K over 20 triples, robust / frozen - 1",
+               "estimate": float(pr[:, 0].mean() / pr[:, 1].mean() - 1),
+               "fp_robust_mean": float(pr[:, 0].mean()), "fp_frozen_mean": float(pr[:, 1].mean())}
+        if b == cost_budget:                                     # CI at the primary budget only
+            boot = []
+            sizes = np.array([len(r) for r in rows_of])
+            for wb in C:
+                k = metrics.budget_k(b, int(wb @ sizes))
+                v = mean_pairs(sorted_scores.fp(wb, k))
+                boot.append(v[:, 0].mean() / v[:, 1].mean() - 1)
+            res = mean_ci(row["estimate"], np.array(boot))
+            row.update(res, passes_margin=cost_passes(res["ci_high"]))
+        summary.append(row)
+    return pd.concat(per_triple, ignore_index=True), pd.DataFrame(summary)
 
 
 # ---------------------------------------------------------------- ADBench
@@ -237,6 +406,9 @@ def ulb_inputs(cfg: dict):
 def main(argv: list[str]) -> None:
     ap = argparse.ArgumentParser(prog="python -m thesis.robust_fusion")
     ap.add_argument("--quick", action="store_true")
+    ap.add_argument("--triples", action="store_true",
+                    help="the 20-triple development check of H4r(i) and H4r-cost on ULB day 2")
+    ap.add_argument("--resamples", type=int, default=None, help="--triples with --quick only")
     args = ap.parse_args(argv)
     state = git_state()
     if state["dirty"] and not args.quick:
@@ -245,6 +417,9 @@ def main(argv: list[str]) -> None:
     cfg = frozen.load()
     ensembles = distinct_ensembles(cfg)
     base, y = ulb_inputs(cfg)
+    if args.triples:
+        main_triples(cfg, base, y, ensembles, state, args, t0)
+        return
     pool = list(base.singles)
     meth = methods(base.train, base.test, pool, ensembles)
     budget = budget_table(meth, y, cfg["budgets"]["ulb"]["values"])
@@ -287,6 +462,55 @@ def main(argv: list[str]) -> None:
             "note": "Development data (ULB, ADBench). Developed on ULB. freeze-v1 fusion configs unchanged.",
             "runtime_s": round(time.perf_counter() - t0, 1)}
     (OUT / "robust_fusion.meta.json").write_text(json.dumps(meta, indent=1) + "\n", encoding="utf-8")
+
+
+
+def main_triples(cfg, base, y, ensembles, state, args, t0) -> None:
+    """ULB day 2, developed on ULB: the 20-triple H4r(i) and H4r-cost, plus E-all as a
+    descriptive row. Labels: day-2 labels for the cost part only."""
+    from thesis import data as _data
+    split = load_split()
+    hours = np.floor((split.t_test - _data.ULB_DAY_SECONDS) / 3600).astype(int)
+    resamples = (args.resamples or 50) if args.quick else cfg["statistics"]["bootstrap"]["resamples"]
+    budgets = cfg["budgets"]["ulb"]["values"]
+    primary = cfg["budgets"]["ulb"]["primary"]
+    per, summ = ulb_triples(base.train, base.test, y, hours, budgets, resamples, primary,
+                            cfg["statistics"]["bootstrap"]["seed"])
+    eb = {triple_name(m): e for e, m in ensembles.items() if len(m) == 3}
+    per["named_ensemble"] = per.triple.map(eb)
+    M = np.ones((24, 1))
+    rows = []
+    for q in ULB_Q:
+        d = {}
+        for name, c in (("robust", ROBUST), ("frozen", FROZEN)):
+            tr, te = fuse_set(base.train, base.test, ensembles["E-all"], *c)
+            d[name] = deviation(*block_alerts(tr, te, hours, q), M, q)
+        rows.append({"part": "H4r(i) descriptive E-all (6 members)", "q": q,
+                     "statistic": "dD for E-all", "estimate": d["robust"] - d["frozen"],
+                     "D_robust": d["robust"], "D_frozen": d["frozen"]})
+    summ = pd.concat([summ, pd.DataFrame(rows)], ignore_index=True)
+    pd.set_option("display.width", 200, "display.max_rows", 100)
+    print(per[per.q == 0.998].round(4).to_string(index=False))
+    print(summ.round(4).to_string(index=False))
+    print(f"runtime {time.perf_counter() - t0:.0f} s")
+    if args.quick:
+        return
+    OUT.mkdir(parents=True, exist_ok=True)
+    c = state["commit"]
+    per.assign(commit=c).to_csv(OUT / "ulb_triples_per_triple.csv", index=False)
+    summ.assign(commit=c).to_csv(OUT / "ulb_triples_summary.csv", index=False)
+    meta = {**state, "command": "python -m thesis.robust_fusion --triples",
+            "created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "label": "developed on ULB; descriptive development check, the design is not changed on it",
+            "triples": [triple_name(m) for m in TRIPLES], "robust": config_name(*ROBUST),
+            "frozen": config_name(*FROZEN), "quantiles": list(ULB_Q), "budgets": budgets,
+            "cost_ci_budget": primary, "cost_margin": COST_MARGIN, "zero_alert_window": ZERO_ALERTS,
+            "resampling": "the 24 hours of day 2 drawn with replacement (block analogue of the "
+                          "day-block bootstrap; day 2 is one window); numpy default_rng(seed 0)",
+            "resamples": resamples,
+            "labels_read": "day-2 labels for the cost part only; the threshold part is label-free",
+            "runtime_s": round(time.perf_counter() - t0, 1)}
+    (OUT / "ulb_triples.meta.json").write_text(json.dumps(meta, indent=1) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":
