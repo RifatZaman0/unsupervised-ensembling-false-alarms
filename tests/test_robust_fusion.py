@@ -163,11 +163,11 @@ def test_deviation_zero_alert_rule_and_weights():
 
 
 def test_cost_ratio_and_margin():
-    fr = np.array([[10.0, 20.0], [10.0, 20.0]])          # blocks x triples
-    fz = np.array([[10.0, 10.0], [10.0, 10.0]])
-    assert rf.cost_ratio(fr, fz) == pytest.approx(60 / 40 - 1)   # ratio of the mean totals
+    fr = np.array([[10.0, 20.0], [10.0, 20.0]])          # blocks x triples: totals 20, 40
+    fz = np.array([[10.0, 30.0], [10.0, 30.0]])          # totals 20, 60
+    assert rf.cost_ratio(fr, fz) == pytest.approx(60 / 80 - 1)   # ratio of the mean totals (not of ratios)
     C = np.array([[2, 0], [1, 1]])
-    assert np.allclose(rf.cost_ratio(fr, fz, C), [0.5, 0.5])
+    assert np.allclose(rf.cost_ratio(fr, fz, C), [60 / 80 - 1, 60 / 80 - 1])
     assert rf.COST_MARGIN == 0.05 and rf.cost_passes(0.05) and not rf.cost_passes(0.0500001)
 
 
@@ -184,3 +184,14 @@ def test_triple_deviations_pair_the_two_fusions():
     r = tab.iloc[0]
     assert r.dD == pytest.approx(r.D_robust - r.D_frozen) and r.dD < 0   # median tolerates C
     assert boot.shape == (2, 1) and boot[0, 0] == pytest.approx(r.dD)
+
+
+def test_sorted_scores_fall_back_when_a_tie_group_runs_past_the_prefix():
+    S = np.concatenate([np.full(300, 5.0), np.linspace(4.0, 0.0, 700)])[None, :]
+    y = np.zeros(1000, dtype=int)
+    y[::7] = 1
+    blk = np.arange(1000) % 10
+    ss = rf.SortedScores(S, y, blk, prefix=200)          # the 300 tied top scores run past 200
+    w = np.ones(10, dtype=int)
+    expect = 150 - rf.metrics.tp_at_k(S[0], y, 150)        # K inside the prefix, ties beyond it
+    assert ss.fp(w, 150)[0] == expect

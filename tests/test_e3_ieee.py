@@ -102,39 +102,59 @@ def test_h4a_point_is_spearman_of_abs_log_over_members_x_months():
     assert row["verdict"] == ("supported" if row["ci_low"] > 0 else "not supported")
 
 
-def hyp_inputs(i_low, i_high, ii_low, ii_high, changed_all, changed_bench=False):
-    v3 = {"hypotheses": {"H4r": {"supported_if": "both", "i_threshold": {"supported_if": "i"},
-                                 "ii_budget": {"supported_if": "ii"}},
+def hyp_inputs(lo, hi, cost_hi, changed_all, changed_bench=False):
+    v3 = {"hypotheses": {"H4r": {"supported_if": "main"}, "H4r_cost": {"passes_if": "cost"},
                          **{h: {"supported_if": "x", "status": "exploratory"} for h in ("H4a", "H4b", "H4c", "H4d")}}}
     row = lambda role, lo, hi, **k: {"role": role, "ci_low": lo, "ci_high": hi, "method": "m",
                                      "comparator": "c", "ci_entirely_below_0": hi < 0,
                                      "ci_entirely_above_0": lo > 0, **k}
-    dl = pd.DataFrame([row("H4r (ii)", ii_low, ii_high, d_fp=0.0), row("H4b", -1.0, 1.0, d_fp=0.0),
-                       row("H4c", -1.0, 1.0, d_fp=0.0)])
-    thr = pd.DataFrame([row("H4r (i)", i_low, i_high, d_D=-0.1)])
+    dl = pd.DataFrame([row("H4b", -1.0, 1.0, d_fp=0.0), row("H4c", -1.0, 1.0, d_fp=0.0)])
+    main = {"estimate": -0.2, "ci_low": lo, "ci_high": hi, "ci_entirely_below_0": hi < 0,
+            "ci_entirely_above_0": lo > 0}
+    cost = {"estimate": 0.01, "ci_low": -0.02, "ci_high": cost_hi, "passes": cost_hi <= 0.05}
     dec = pd.DataFrame({"ensemble": ["E-all", "E-bench"], "changed": [changed_all, changed_bench]})
-    return r.rq4_hypothesis_rows(dl, thr, dec, {"hypothesis": "H4a"}, {"rho": 0.1}, v3).set_index("hypothesis")
+    return r.rq4_hypothesis_rows(dl, main, cost, dec, {"hypothesis": "H4a"}, {"rho": 0.1}, v3).set_index("hypothesis")
 
 
-def test_h4r_decision_when_a_member_breaks():
-    t = hyp_inputs(-0.5, -0.1, -3.0, 2.0, True)
-    assert t.loc["H4r (i)", "verdict"] == "supported" and t.loc["H4r (ii)", "verdict"] == "no harm shown"
+def test_h4r_is_decided_by_the_triple_mean_and_the_cost_check_is_separate():
+    t = hyp_inputs(-0.5, -0.1, 0.03, True)
     assert t.loc["H4r", "verdict"] == "supported" and t.loc["H4r", "status"] == "decided"
-    t = hyp_inputs(-0.5, 0.1, -3.0, 2.0, True)                 # (i) CI crosses 0
-    assert t.loc["H4r (i)", "verdict"] == "not supported" and t.loc["H4r", "verdict"] == "not supported"
-    t = hyp_inputs(-0.5, -0.1, 0.5, 2.0, True)                 # (ii) CI entirely above 0: worse
-    assert t.loc["H4r (ii)", "verdict"] == "worse" and t.loc["H4r", "verdict"] == "not supported"
+    assert t.loc["H4r-cost", "verdict"] == "passes"
+    t = hyp_inputs(-0.5, 0.1, 0.03, True)                       # CI crosses 0
+    assert t.loc["H4r", "verdict"] == "not supported"
+    t = hyp_inputs(-0.5, -0.1, 0.08, True)                      # cost fails, H4r still supported
+    assert t.loc["H4r", "verdict"] == "supported" and t.loc["H4r-cost", "verdict"] == "fails"
     assert t.loc["H4b", "status"] == "decided" and t.loc["H4b", "verdict"] == "not supported"
 
 
-def test_no_break_turns_h4r_i_into_a_no_harm_check():
-    t = hyp_inputs(-0.5, 0.1, -3.0, 2.0, False)                # crosses 0: no harm shown
-    assert t.loc["H4r (i)", "verdict"] == "no harm shown" and t.loc["H4r (i)", "status"].startswith("no member broke")
-    assert t.loc["H4r", "verdict"] == "supported"
-    t = hyp_inputs(0.1, 0.5, -3.0, 2.0, False)                 # entirely above 0: worse
-    assert t.loc["H4r (i)", "verdict"] == "worse" and t.loc["H4r", "verdict"] == "not supported"
+def test_no_break_turns_h4r_into_a_no_harm_check_and_keeps_the_cost_check():
+    t = hyp_inputs(-0.5, 0.1, 0.03, False)                      # crosses 0: no harm shown
+    assert t.loc["H4r", "verdict"] == "no harm shown" and t.loc["H4r", "status"].startswith("no member broke")
+    t = hyp_inputs(0.1, 0.5, 0.08, False)                       # entirely above 0: worse
+    assert t.loc["H4r", "verdict"] == "worse" and t.loc["H4r-cost", "verdict"] == "fails"
+    assert t.loc["H4r-cost", "status"] == "decided"
     assert t.loc["H4b", "status"].startswith("not testable") and t.loc["H4c", "status"].startswith("descriptive")
-    assert "H4e" not in t.index                                # descriptive rows live in rq4_deltas
+    assert "H4e" not in t.index                                 # descriptive rows live in rq4_deltas
+
+
+def test_h4r_triples_pairs_the_fusions_and_averages_the_triples(monkeypatch):
+    lay = small_layout((2, 3), rows_per_day=40)
+    rng = np.random.default_rng(3)
+    n = len(lay.day_test)
+    from thesis import detectors, robust_fusion
+    names = list(detectors.DETECTORS)
+    train = {m: rng.normal(size=(1, 400)) for m in names}
+    test = {m: rng.normal(size=(1, n)) for m in names}
+    test["LOF"] = test["LOF"] + 5.0                             # one member breaks
+    fitted = r.Fitted(train, test, tuple(names), {})
+    y = (rng.random(n) < 0.05).astype(int)
+    C, _ = r.rq4_counts(lay, 30, 0)
+    tab, main, cost = r.h4r_triples(fitted, lay, 0.9, C, 0.1, y)
+    assert len(tab) == 20 and set(tab.triple) == {"+".join(t) for t in robust_fusion.TRIPLES}
+    assert main["estimate"] == pytest.approx(tab.dD.mean()) and np.allclose(tab.dD, tab.D_robust - tab.D_frozen)
+    assert tab[tab.triple.str.contains("LOF")].dD.mean() < tab[~tab.triple.str.contains("LOF")].dD.mean()
+    assert cost["estimate"] == pytest.approx(tab.fp_total_robust.mean() / tab.fp_total_frozen.mean() - 1)
+    assert cost["passes"] == (cost["ci_high"] <= 0.05)
 
 
 def test_month_deviation_with_weights_and_zero_alert_months():

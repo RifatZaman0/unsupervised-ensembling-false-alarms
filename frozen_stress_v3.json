@@ -1,16 +1,8 @@
 {
  "name": "freeze-v3",
  "draft_status": {
-  "state": "draft for the freeze-v3 review; the supervisor approved robust fusion as the main RQ4 hypothesis and the guard settings on 2026-11-17; the remaining choices listed here await confirmation",
-  "awaiting_confirmation": [
-   "hypotheses.H4r.zero_alert_month",
-   "hypotheses.H4r.q",
-   "hypotheses.H4r.supported_if",
-   "breaks",
-   "evaluation.daily_budget",
-   "hypotheses.H4c.supported_if",
-   "bound_check.broken_member"
-  ],
+  "state": "draft for the freeze-v3 review; every choice confirmed by the student on 2026-11-17 (supervisor informed); this block is deleted at the tag after the review",
+  "awaiting_confirmation": [],
   "rule": "this block is deleted before the tag; thesis.frozen_v3.validate(cfg, for_tag=True) refuses a file that still has it"
  },
  "written": "2026-11-17",
@@ -85,22 +77,24 @@
  },
  "hypotheses": {
   "H4r": {
-   "question": "RQ4, main hypothesis (developed on ULB)",
-   "method": "E-all, train-percentile + median",
-   "comparator": "E-all, min-max + mean (freeze-v1 primary)",
-   "i_threshold": {
-    "statistic": "D = mean over months 2-6 of |log r_month|, r_month = month alert rate at the frozen month-1 threshold of the method's fused training scores / (1 - q); IForest: alerts summed over the five seeds, rows multiplied by five; dD = D(method) - D(comparator)",
-    "q": 0.98,
-    "zero_alert_month": "a month with no alert (summed over seeds) counts as 0.5 alert",
-    "ci": "evaluation.bootstrap: every month's alert rate recomputed from the drawn days",
-    "supported_if": "the 95% day-block CI of dD lies entirely below 0"
-   },
-   "ii_budget": {
-    "statistic": "dFP = sum over test days of FP@K_d(method) - FP@K_d(comparator), budget 0.02, daily K",
-    "supported_if": "the 95% day-block CI of dFP does not lie entirely above 0 (not worse; no margin)"
-   },
-   "supported_if": "(i) and (ii) both hold; each part is reported with its own verdict",
-   "descriptive": "E-bench and E-bench-5% under the same comparison (both parts); q = 0.99 for part (i); every budget for part (ii)"
+   "question": "RQ4, main hypothesis (developed on ULB): decided by threshold mode only",
+   "ensembles": "all 20 three-member ensembles of the six freeze-v1 detectors (thesis.robust_fusion.TRIPLES), each fused once per IForest seed",
+   "method": "train-percentile + median",
+   "comparator": "min-max + mean (freeze-v1 primary)",
+   "statistic": "dD_bar = mean over the 20 triples of [D(train-percentile + median) - D(min-max + mean)], paired per triple; D = mean over months 2-6 of |log r_month|, r_month = month alert rate at the frozen month-1 threshold of the triple's fused training scores / (1 - q); IForest: alerts summed over the five seeds, rows multiplied by five",
+   "q": 0.98,
+   "zero_alert_month": "a month with no alert (summed over seeds) counts as 0.5 alert",
+   "ci": "evaluation.bootstrap: every month's alert rate recomputed from the drawn days, for every triple and both fusions",
+   "supported_if": "the 95% day-block CI of dD_bar lies entirely below 0",
+   "descriptive": "E-bench, E-bench-5% and E-all, each on its own row (E-all has six members); q = 0.99"
+  },
+  "H4r_cost": {
+   "status": "pre-registered cost check of robust fusion (developed on ULB)",
+   "statistic": "R = (mean over the 20 triples of total FP@K, train-percentile + median) / (same, min-max + mean) - 1; total FP@K = sum over the test days of months 2-6 of FP@K_d, budget 0.02, daily K",
+   "ci": "evaluation.bootstrap",
+   "passes_if": "the upper bound of the 95% day-block CI of R is <= 0.05",
+   "margin": "+5% relative increase, set before IEEE-CIS from the ADBench development cost (docs/notes/robust_fusion_check_2026-11-17 table 3; results/tables/robust_fusion/adbench_static.csv): over all 20 triples, train-percentile + median costs +4.3% FP@K at the 2% budget (51.0 vs 48.9), the budget the IEEE-CIS primary uses; +5% allows that static cost and no more",
+   "descriptive": "E-bench, E-bench-5% and E-all on their own rows, every budget"
   },
   "H4a": {
    "question": "RQ4, pre-deployment prediction (secondary; a short negative result on ULB)",
@@ -148,10 +142,10 @@
    "deviation": "|r_m,month - 1| at q = 0.98 (the freeze-v1 H3a deviation divided by the target)",
    "statistic": "per member, the least-squares slope of the deviation on the drift share over the five months"
   },
-  "multiplicity": "no correction (as freeze-v1): H4r part (i), H4a and H4b are one-sided 2.5% tests; H4r part (ii) and H4c are no-harm checks; H4r needs both of its parts"
+  "multiplicity": "no correction (as freeze-v1): H4r, H4a and H4b are one-sided 2.5% tests; H4r-cost and H4c are no-harm checks"
  },
  "breaks": "a member breaks if the guard (statistic, guard) excludes it from E-all on at least one test day at the primary budget",
- "if_no_member_breaks": "if no member breaks (breaks), then H4r part (i) becomes a no-harm check (supported if the 95% CI of dD does not lie entirely above 0) and part (ii) is unchanged; H4b is reported as 'not testable: no member broke' (E-guard equals the static ensemble, dFP = 0 by identity) and H4c as descriptive; H4a is decided as stated (it needs no break); H4d and H4e are descriptive in every case. The member-day table of r and the bound check are reported in every case",
+ "if_no_member_breaks": "if no member breaks (breaks), then H4r becomes a no-harm check (supported if the 95% CI of dD_bar does not lie entirely above 0) and H4r_cost stays as it is; H4b is reported as 'not testable: no member broke' (E-guard equals the static ensemble, dFP = 0 by identity) and H4c as descriptive; H4a is decided as stated (it needs no break); H4d and H4e are descriptive in every case. The member-day table of r and the bound check are reported in every case",
  "removed": {
   "relative_to_median": "rules on r relative to the median member are not used: on ULB they removed KNN, the only member on target (results/tables/e3_ulb/stress/stress_deltas.csv), and in IEEE-CIS month 1 the median r was 0.039, so they flagged the members on target (results/tables/ieee_cis/stress_month1.csv)",
   "two_sided": "the lower bound 1/c is not used: within-window undershoot came from the night hours on ULB and from a count-feature burst on days 8-13 of IEEE-CIS month 1, and on ULB the two-sided rules kept only KNN and added false alarms (results/tables/e3_ulb/stress/stress_deltas.csv)",

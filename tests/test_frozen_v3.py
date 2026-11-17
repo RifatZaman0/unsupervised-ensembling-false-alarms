@@ -28,9 +28,12 @@ def test_hypotheses_follow_the_agreed_design(cfg, v1):
     assert set(f3.HYPOTHESES) <= set(h)
     assert h["H4b"]["budget"] == h["H4c"]["budget"] == v1["budgets"]["ieee_cis"]["primary"]
     assert h["H4d"]["status"].startswith("exploratory") and "developed after seeing ULB" in h["H4d"]["status"]
-    assert h["H4r"]["method"] == "E-all, train-percentile + median" and h["H4r"]["i_threshold"]["q"] == 0.98
+    assert h["H4r"]["method"] == "train-percentile + median" and h["H4r"]["q"] == 0.98
+    assert h["H4r"]["ensembles"].startswith("all 20") and h["H4r_cost"]["passes_if"].endswith("<= 0.05")
     assert cfg["robust_fusion"]["label"] == "developed on ULB" and h["H4e"]["status"].startswith("descriptive")
-    assert "H4r part (i) becomes a no-harm check" in cfg["if_no_member_breaks"]
+    assert "H4r becomes a no-harm check" in cfg["if_no_member_breaks"]
+    assert "H4r_cost stays as it is" in cfg["if_no_member_breaks"]
+    assert cfg["draft_status"]["awaiting_confirmation"] == []
     assert list(h)[0] == "H4r"                                   # the main RQ4 hypothesis comes first
     assert "members x months" in h["H4a"]["statistic"] and "|log r_m|" in h["H4a"]["statistic"]
     assert cfg["pre_deployment"]["use"].endswith("not used for H4b")
@@ -102,14 +105,21 @@ BREAKS = {
     "robust not percentile": _set(("robust_fusion", "calibration"), "min-max"),
     "robust not median": _set(("robust_fusion", "aggregation"), "mean"),
     "robust label missing": _set(("robust_fusion", "label"), "developed on ADBench"),
-    "H4r other method": _set(("hypotheses", "H4r", "method"), "E-bench, train-percentile + median"),
-    "H4r other comparator": _set(("hypotheses", "H4r", "comparator"), "E-all, train-percentile + mean"),
-    "H4r (i) other criterion": _set(("hypotheses", "H4r", "i_threshold", "supported_if"), "dD < 0"),
-    "H4r (ii) other criterion": _set(("hypotheses", "H4r", "ii_budget", "supported_if"), "the CI lies entirely below 0"),
-    "H4r (ii) monthly K": _set(("hypotheses", "H4r", "ii_budget", "statistic"), "dFP at budget 0.02, monthly K"),
-    "H4r (i) other q": _set(("hypotheses", "H4r", "i_threshold", "q"), 0.99),
+    "H4r other method": _set(("hypotheses", "H4r", "method"), "min-max + median"),
+    "H4r other comparator": _set(("hypotheses", "H4r", "comparator"), "train-percentile + mean"),
+    "H4r on E-all only": _set(("hypotheses", "H4r", "ensembles"), "E-all"),
+    "H4r unpaired": _set(("hypotheses", "H4r", "statistic"), "difference of the mean D over triples, |log r_month|"),
+    "H4r other criterion": _set(("hypotheses", "H4r", "supported_if"), "dD_bar < 0"),
+    "H4r descriptive rows missing": _set(("hypotheses", "H4r", "descriptive"), "E-bench only"),
+    "H4r other q": _set(("hypotheses", "H4r", "q"), 0.99),
+    "cost monthly K": _set(("hypotheses", "H4r_cost", "statistic"), "mean over the 20 triples, budget 0.02, monthly K"),
+    "cost on E-all only": _set(("hypotheses", "H4r_cost", "statistic"), "E-all total FP@K, budget 0.02, daily K"),
+    "cost other margin": _set(("hypotheses", "H4r_cost", "passes_if"), "the upper bound of the 95% day-block CI of R is <= 0.10"),
+    "cost margin not justified": _set(("hypotheses", "H4r_cost", "margin"), "+5%"),
+    "cost section missing": _set(("hypotheses", "H4r_cost"), DELETE),
     "breaks section missing": _set(("breaks",), DELETE),
     "no-break case without H4r": _set(("if_no_member_breaks",), "H4b, H4c, H4d and H4e as stated"),
+    "no-break case without the cost check": _set(("if_no_member_breaks",), "H4r, H4b, H4c, H4d and H4e as stated"),
     "H4b other criterion": _set(("hypotheses", "H4b", "supported_if"), "the CI does not lie above 0"),
     "H4a other criterion": _set(("hypotheses", "H4a", "supported_if"), "rho > 0"),
     "H4a other q": _set(("hypotheses", "H4a", "statistic"), lambda s: s.replace("q = 0.98", "q = 0.99")),

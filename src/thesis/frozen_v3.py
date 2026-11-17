@@ -18,7 +18,7 @@ FROZEN_V3 = REPO / "frozen_stress_v3.json"
 REQUIRED = ("name", "scope", "builds_on", "development_data", "rq4", "robust_fusion", "statistic",
             "guard", "pre_deployment", "evaluation", "hypotheses", "breaks", "if_no_member_breaks",
             "removed", "runner")
-HYPOTHESES = ("H4r", "H4a", "H4b", "H4c", "H4d", "H4e", "bound_check", "drift_slope", "multiplicity")
+HYPOTHESES = ("H4r", "H4r_cost", "H4a", "H4b", "H4c", "H4d", "H4e", "bound_check", "drift_slope", "multiplicity")
 DECIDED = ("H4r", "H4a", "H4b", "H4c")
 STALE = re.compile(r"\b(pending|candidate|proposed|draft|awaiting|tentative|to be (?:decided|confirmed))\b",
                    re.IGNORECASE)
@@ -83,17 +83,26 @@ def validate(cfg: dict, v1: dict, for_tag: bool = False) -> None:
     if "no month-1 labels" not in hyp["H4e"]["status"]:
         raise ValueError("H4e reads no month-1 label")
     r = hyp["H4r"]
-    if r["method"] != "E-all, train-percentile + median" or not r["comparator"].startswith("E-all, min-max + mean"):
-        raise ValueError("H4r compares E-all train-percentile + median with E-all min-max + mean")
-    if "entirely below 0" not in r["i_threshold"]["supported_if"]:
-        raise ValueError("H4r (i): CI of dD entirely below 0")
-    if "does not lie entirely above 0" not in r["ii_budget"]["supported_if"]:
-        raise ValueError("H4r (ii): not worse (CI not entirely above 0)")
-    if "budget 0.02, daily K" not in r["ii_budget"]["statistic"]:
-        raise ValueError("H4r (ii) uses the 2% primary budget with daily K")
+    if r["method"] != "train-percentile + median" or not r["comparator"].startswith("min-max + mean"):
+        raise ValueError("H4r compares train-percentile + median with min-max + mean")
+    if not r["ensembles"].startswith("all 20 three-member ensembles"):
+        raise ValueError("H4r averages over all 20 three-member ensembles")
+    if "paired per triple" not in r["statistic"] or "|log r_month|" not in r["statistic"]:
+        raise ValueError("H4r: paired per-triple change in mean monthly |log r|")
+    if "entirely below 0" not in r["supported_if"]:
+        raise ValueError("H4r: CI of dD_bar entirely below 0")
+    if not all(e in r["descriptive"] for e in ("E-bench", "E-bench-5%", "E-all")):
+        raise ValueError("H4r: E-bench, E-bench-5% and E-all are descriptive rows")
     ieee = v1["budgets"]["ieee_cis"]
-    if hyp["H4r"]["i_threshold"]["q"] != round(1 - ieee["primary"], 12):
-        raise ValueError("H4r (i) uses q = 1 - primary budget")
+    if r["q"] != round(1 - ieee["primary"], 12):
+        raise ValueError("H4r uses q = 1 - primary budget")
+    cost = hyp["H4r_cost"]
+    if "budget 0.02, daily K" not in cost["statistic"] or "mean over the 20 triples" not in cost["statistic"]:
+        raise ValueError("H4r_cost: 2% primary budget, daily K, mean over the 20 triples")
+    if cost["passes_if"] != "the upper bound of the 95% day-block CI of R is <= 0.05":
+        raise ValueError("H4r_cost passes if the upper CI bound of R is <= +5%")
+    if "set before IEEE-CIS" not in cost["margin"] or "ADBench" not in cost["margin"]:
+        raise ValueError("H4r_cost: the margin is justified from ADBench and set before IEEE-CIS")
     for h in ("H4b", "H4c"):
         if hyp[h]["budget"] != ieee["primary"]:
             raise ValueError(f"{h}: budget {hyp[h]['budget']} is not the IEEE-CIS primary {ieee['primary']}")
@@ -115,7 +124,7 @@ def validate(cfg: dict, v1: dict, for_tag: bool = False) -> None:
     boot = v1["statistics"]["bootstrap"]
     if boot["resamples"] != 1000 or boot["seed"] != 0 or not boot["ieee_cis"].startswith("month-stratified day-block"):
         raise ValueError("freeze-v1 IEEE-CIS bootstrap is not the one this file reuses")
-    for k in ("H4r", "H4b", "H4c", "H4d", "H4e"):
+    for k in ("H4r", "H4r_cost", "H4b", "H4c", "H4d", "H4e"):
         if k not in cfg["if_no_member_breaks"]:
             raise ValueError(f"if_no_member_breaks must say what is reported for {k}")
     if not {"relative_to_median", "sead"} <= set(cfg["removed"]):
@@ -143,6 +152,9 @@ def check_code_matches(cfg: dict) -> None:
         "median outside the frozen configs": "median" in fusion.EXTRA_AGGREGATIONS and "median" not in fusion.AGGREGATIONS,
         "robust configuration": robust_fusion.ROBUST == ("percentile", "median"),
         "robust code": cfg["robust_fusion"]["code"] == "thesis.robust_fusion.fuse_set",
+        "20 triples": len(robust_fusion.TRIPLES) == 20,
+        "cost margin": robust_fusion.COST_MARGIN == 0.05,
+        "zero-alert month": robust_fusion.ZERO_ALERTS == 0.5 and "0.5 alert" in cfg["hypotheses"]["H4r"]["zero_alert_month"],
     }
     bad = [k for k, ok in checks.items() if not ok]
     if bad:

@@ -10,8 +10,9 @@ tree is clean and no earlier output exists): month 1 fit, months 2-6 test.
   CIs, regret) with the month-stratified day-block bootstrap; E4 threshold mode per month;
   H3a; H3b (weekly Evidently drift share against the weekly FPR of E-bench); context (ADTK on
   daily alert rates, Evidently drift of the fused E-bench score).
-- freeze-v3: robust fusion (train-percentile + median: H4r in threshold and budget mode and
-  the label-free bound check per month), pre-deployment check (days 0-20 -> 21-29), run-time
+- freeze-v3: robust fusion (train-percentile + median: H4r over the 20 triples in threshold
+  mode, H4r-cost in budget mode, E-bench / E-bench-5% / E-all as descriptive rows, the
+  label-free bound check per month), pre-deployment check (days 0-20 -> 21-29), run-time
   guard per test day, daily FP@K, H4a-H4e, the drift slope, the member-day table of r. No
   month-1 label is read.
 Dry run: the same code on month 1 only. Days 0-20 play month 1, days 21-29 play the test
@@ -444,12 +445,9 @@ def day_alerts(train: np.ndarray, test: np.ndarray, day: np.ndarray, q: float) -
 
 
 def month_deviation(A: np.ndarray, N: np.ndarray, M: np.ndarray, q: float, counts=None) -> float:
-    """H4r (i): mean over months of |log(month alert rate / (1 - q))|; a month without an alert
-    counts as 0.5 alert (frozen_stress_v3.json H4r.i_threshold.zero_alert_month)."""
-    w = np.ones(len(A)) if counts is None else np.asarray(counts, dtype=np.float64)
-    a, n = (A * w) @ M, (N * w) @ M
-    r = np.maximum(a, 0.5) / (n * round(1 - q, 12))
-    return float(np.mean(np.abs(np.log(r))))
+    """Mean over months of |log(month alert rate / (1 - q))|, a month without an alert counted as
+    0.5 alert (frozen_stress_v3.json H4r.zero_alert_month): robust_fusion.deviation."""
+    return robust_fusion.deviation(A, N, M, q, counts)
 
 
 def h4r_threshold(methods: dict, lay: Layout, q: float, C: np.ndarray, pairs, roles) -> pd.DataFrame:
@@ -471,6 +469,42 @@ def h4r_threshold(methods: dict, lay: Layout, q: float, C: np.ndarray, pairs, ro
                      "ci_entirely_below_0": bool(hi < 0), "ci_entirely_above_0": bool(lo > 0),
                      "role": roles.get((a, c), "descriptive")})
     return pd.DataFrame(rows)
+
+
+def month_matrix(lay: Layout) -> np.ndarray:
+    """Test days (sorted) x months indicator."""
+    days = np.unique(lay.day_test)
+    month_of_day = {int(d): int(m) for d, m in zip(lay.day_test, lay.month_test)}
+    return np.array([[month_of_day[int(d)] == mo for mo in lay.months] for d in days], dtype=np.float64)
+
+
+def h4r_triples(fitted: Fitted, lay: Layout, q: float, C: np.ndarray, budget, y: np.ndarray):
+    """H4r and H4r-cost over the 20 three-member ensembles (frozen_stress_v3.json): per triple,
+    D under train-percentile + median and under min-max + mean (paired), and the daily FP@K
+    totals. Returns (per-triple table, H4r result, H4r-cost result)."""
+    M = month_matrix(lay)
+    rows, boot, fp_r, fp_f = [], [], [], []
+    for members in robust_fusion.TRIPLES:
+        an, fp = {}, {}
+        for name, cfg in (("robust", robust_fusion.ROBUST), ("frozen", robust_fusion.FROZEN)):
+            tr, te = robust_fusion.fuse_set(fitted.train, fitted.test, members, *cfg)
+            an[name] = robust_fusion.block_alerts(tr, te, lay.day_test, q)
+            fp[name] = guard.daily_fp(te, y, lay.day_test, budget).fp_at_k.to_numpy()
+        d_r = robust_fusion.deviation(*an["robust"], M, q)
+        d_f = robust_fusion.deviation(*an["frozen"], M, q)
+        rows.append({"triple": robust_fusion.triple_name(members), "q": q, "D_robust": d_r,
+                     "D_frozen": d_f, "dD": d_r - d_f, "budget": budget,
+                     "fp_total_robust": float(fp["robust"].sum()), "fp_total_frozen": float(fp["frozen"].sum())})
+        boot.append([robust_fusion.deviation(*an["robust"], M, q, w) -
+                     robust_fusion.deviation(*an["frozen"], M, q, w) for w in C])
+        fp_r.append(fp["robust"])
+        fp_f.append(fp["frozen"])
+    tab = pd.DataFrame(rows)
+    main = robust_fusion.mean_ci(tab.dD.mean(), np.array(boot).T.mean(axis=1))
+    FR, FZ = np.array(fp_r).T, np.array(fp_f).T            # days x triples
+    cost = robust_fusion.mean_ci(robust_fusion.cost_ratio(FR, FZ), robust_fusion.cost_ratio(FR, FZ, C))
+    cost["passes"] = robust_fusion.cost_passes(cost["ci_high"])
+    return tab, main, cost
 
 
 def bound_monthly(fitted: Fitted, lay: Layout, ensembles, mr: pd.DataFrame, q: float) -> pd.DataFrame:
@@ -594,46 +628,41 @@ def rq4_deltas(D: pd.DataFrame, C: np.ndarray, singles, pairs, budget, roles: di
     return pd.DataFrame(rows)
 
 
-def rq4_hypothesis_rows(dl: pd.DataFrame, thr: pd.DataFrame, dec: pd.DataFrame, h4a_row: dict,
+def rq4_hypothesis_rows(dl: pd.DataFrame, main: dict, cost: dict, dec: pd.DataFrame, h4a_row: dict,
                         h4d: dict, v3: dict) -> pd.DataFrame:
-    """H4r (main), H4a, H4b, H4c, H4d. A member breaks if the guard excludes it from E-all on
-    at least one test day at the primary budget (frozen_stress_v3.json breaks)."""
+    """H4r (main, 20 triples), H4r-cost, H4a, H4b, H4c, H4d. A member breaks if the guard
+    excludes it from E-all on at least one test day at the primary budget (frozen `breaks`)."""
     hyp = v3["hypotheses"]
     broke = dec.groupby("ensemble")["changed"].any().to_dict()
     any_break = bool(broke.get("E-all", False))
-    d = dl.set_index("role")
-    ti = thr.set_index("role").loc["H4r (i)"]
-    tii = d.loc["H4r (ii)"]
-    i_ok = bool(ti.ci_entirely_below_0) if any_break else not bool(ti.ci_entirely_above_0)
-    ii_ok = not bool(tii.ci_entirely_above_0)
     if any_break:
-        i_verdict, i_status = ("supported" if i_ok else "not supported"), "decided"
+        ok = bool(main["ci_entirely_below_0"])
+        verdict, status = ("supported" if ok else "not supported"), "decided"
     else:
-        i_verdict, i_status = ("no harm shown" if i_ok else "worse"), "no member broke: no-harm check"
-    rows = [{"hypothesis": "H4r (i)", "estimate": ti.d_D, "ci_low": ti.ci_low, "ci_high": ti.ci_high,
-             "comparison": f"{ti.method} vs {ti.comparator}", "verdict": i_verdict, "status": i_status,
-             "rule": hyp["H4r"]["i_threshold"]["supported_if"]},
-            {"hypothesis": "H4r (ii)", "estimate": tii.d_fp, "ci_low": tii.ci_low, "ci_high": tii.ci_high,
-             "comparison": f"{tii.method} vs {tii.comparator}",
-             "verdict": "no harm shown" if ii_ok else "worse", "status": "decided",
-             "rule": hyp["H4r"]["ii_budget"]["supported_if"]},
-            {"hypothesis": "H4r", "verdict": "supported" if (i_ok and ii_ok) else "not supported",
-             "status": "decided" if any_break else "no member broke: part (i) read as a no-harm check",
-             "rule": hyp["H4r"]["supported_if"]},
+        ok = not bool(main["ci_entirely_above_0"])
+        verdict, status = ("no harm shown" if ok else "worse"), "no member broke: no-harm check"
+    rows = [{"hypothesis": "H4r", "estimate": main["estimate"], "ci_low": main["ci_low"],
+             "ci_high": main["ci_high"], "comparison": "mean over 20 triples: train-percentile + median vs min-max + mean",
+             "verdict": verdict, "status": status, "rule": hyp["H4r"]["supported_if"]},
+            {"hypothesis": "H4r-cost", "estimate": cost["estimate"], "ci_low": cost["ci_low"],
+             "ci_high": cost["ci_high"], "comparison": "relative increase of the mean total FP@K over 20 triples",
+             "verdict": "passes" if cost["passes"] else "fails", "status": "decided",
+             "rule": hyp["H4r_cost"]["passes_if"]},
             {**h4a_row, "rule": hyp["H4a"]["supported_if"], "status": "decided"}]
+    d = dl.set_index("role")
     for h, ens in (("H4b", "E-all"), ("H4c", "E-bench")):
         r = d.loc[h]
         if h == "H4b":
-            verdict = "supported" if r.ci_entirely_below_0 else "not supported"
+            v = "supported" if r.ci_entirely_below_0 else "not supported"
         else:
-            verdict = "no harm shown" if not r.ci_entirely_above_0 else "worse"
-        status = "decided"
+            v = "no harm shown" if not r.ci_entirely_above_0 else "worse"
+        st = "decided"
         if not broke.get(ens, False):
-            status = {"H4b": "not testable: no member broke (dFP = 0 by identity)",
-                      "H4c": "descriptive: no member broke (dFP = 0 by identity)"}[h]
+            st = {"H4b": "not testable: no member broke (dFP = 0 by identity)",
+                  "H4c": "descriptive: no member broke (dFP = 0 by identity)"}[h]
         rows.append({"hypothesis": h, "estimate": r.d_fp, "ci_low": r.ci_low, "ci_high": r.ci_high,
-                     "comparison": f"{r.method} vs {r.comparator}", "verdict": verdict,
-                     "status": status, "rule": hyp[h]["supported_if"]})
+                     "comparison": f"{r.method} vs {r.comparator}", "verdict": v, "status": st,
+                     "rule": hyp[h]["supported_if"]})
     rows.append({"hypothesis": "H4d", "estimate": h4d["rho"], "verdict": "exploratory",
                  "status": hyp["H4d"]["status"], "comparison": "F_m vs mean log r_m,month"})
     return pd.DataFrame(rows)
@@ -745,15 +774,15 @@ def main(argv: list[str]) -> None:
     pre_r, sets = pre_deployment(lay, names, pool, seeds, budgets, ensembles)
     robust = robust_scores(fitted, ensembles)
     C, _ = rq4_counts(lay, resamples, seed)
-    q_main = v3["hypotheses"]["H4r"]["i_threshold"]["q"]
+    q_main = v3["hypotheses"]["H4r"]["q"]
     thr_methods = {f"robust:{e}": robust[e] for e in ensembles}
     thr_methods.update({f"static:{e}": (fitted.train[method_key(e, *primary)],
                                         fitted.test[method_key(e, *primary)]) for e in ensembles})
     thr_pairs = [(f"robust:{e}", f"static:{e}") for e in ensembles]
-    h4r_thr = pd.concat([h4r_threshold(thr_methods, lay, q, C, thr_pairs,
-                                       {("robust:E-all", "static:E-all"): "H4r (i)"} if q == q_main else {})
+    h4r_thr = pd.concat([h4r_threshold(thr_methods, lay, q, C, thr_pairs, {})       # descriptive rows
                          for q in sorted({q_main, *quantiles}, reverse=True)], ignore_index=True)
-    log("H4r threshold mode done")
+    h4r_tab, h4r_main, h4r_cost = h4r_triples(fitted, lay, q_main, C, primary_budget, y)
+    log("H4r (20 triples) and H4r-cost done")
     rq4_rows, md_all, dec_all, daily_all, h4a_row, h4a_pairs = [], [], [], [], None, None
     for b in budgets:
         scores, md, dec = rq4_methods(fitted, lay, b, ensembles, sets, primary, robust)
@@ -765,8 +794,7 @@ def main(argv: list[str]) -> None:
         for m in ("guarded:E-bench", "robust:E-all", "static:E-bench"):          # H4e, descriptive
             pairs += [(m, bootstrap.MEDIAN), (m, bootstrap.ORACLE)]
         if b == primary_budget:
-            roles = {("robust:E-all", "static:E-all"): "H4r (ii)",
-                     ("guarded:E-all", "static:E-all"): "H4b",
+            roles = {("guarded:E-all", "static:E-all"): "H4b",
                      ("guarded:E-bench", "static:E-bench"): "H4c"}
             h4a_row, h4a_pairs = h4a(pre_r, md, lay, b, C, list(fitted.singles))
             mr = monthly_r(md, lay, b)
@@ -781,8 +809,8 @@ def main(argv: list[str]) -> None:
                                               value_name="fp_at_k").assign(budget=b))
         log(f"RQ4 budget {b} done")
     rq4 = pd.concat(rq4_rows, ignore_index=True)
-    rq4_hyp = rq4_hypothesis_rows(rq4[rq4.budget == primary_budget], h4r_thr, dec_primary, h4a_row,
-                                  h4d_res, v3)
+    rq4_hyp = rq4_hypothesis_rows(rq4[rq4.budget == primary_budget], h4r_main, h4r_cost, dec_primary,
+                                  h4a_row, h4d_res, v3)
 
     out.mkdir(parents=True, exist_ok=True)
     c = state["commit"]
@@ -790,7 +818,7 @@ def main(argv: list[str]) -> None:
              "e3_deltas": deltas, "v1_hypotheses": v1_hyp, "e4_threshold_monthly": thr_m,
              "h3a": h3a_t, "h3b_weekly": h3b_t, "context_adtk": adtk_t,
              "context_score_drift": sdrift, "rq4_pre_deployment_r": pre_r,
-             "rq4_e_stress_sets": sets, "rq4_h4r_threshold": h4r_thr, "rq4_bound_check": bounds,
+             "rq4_e_stress_sets": sets, "rq4_h4r_threshold": h4r_thr, "rq4_h4r_triples": h4r_tab, "rq4_bound_check": bounds,
              "rq4_member_days": pd.concat(md_all, ignore_index=True),
              "rq4_guard_decisions": pd.concat(dec_all, ignore_index=True),
              "rq4_daily_fp": pd.concat(daily_all, ignore_index=True), "rq4_deltas": rq4,
