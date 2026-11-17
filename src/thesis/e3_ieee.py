@@ -10,8 +10,10 @@ tree is clean and no earlier output exists): month 1 fit, months 2-6 test.
   CIs, regret) with the month-stratified day-block bootstrap; E4 threshold mode per month;
   H3a; H3b (weekly Evidently drift share against the weekly FPR of E-bench); context (ADTK on
   daily alert rates, Evidently drift of the fused E-bench score).
-- freeze-v3: pre-deployment check (days 0-20 -> 21-29), run-time guard per test day, daily
-  FP@K, H4a-H4e, the drift slope, the member-day table of r.
+- freeze-v3: robust fusion (train-percentile + median: H4r in threshold and budget mode and
+  the label-free bound check per month), pre-deployment check (days 0-20 -> 21-29), run-time
+  guard per test day, daily FP@K, H4a-H4e, the drift slope, the member-day table of r. No
+  month-1 label is read.
 Dry run: the same code on month 1 only. Days 0-20 play month 1, days 21-29 play the test
 months (21-22 -> "2", 23-24 -> "3", 25-26 -> "4", 27-28 -> "5", 29 -> "6"), each test day is
 an H3b window, and the pre-deployment split is days 0-14 -> 15-20. isFraud is never read:
@@ -36,7 +38,7 @@ import pandas as pd
 from scipy.stats import rankdata
 
 from thesis import (bootstrap, data, detectors, fragility, frozen, frozen_v3, guard,
-                    ieee_features, ieee_stress, lof_diag, metrics)
+                    ieee_features, ieee_stress, lof_diag, metrics, robust_fusion)
 from thesis.e3_ulb import (Fitted, check_code_matches, comparisons, criterion,
                            distinct_ensembles, fit_stage, fit_thresholds, frozen_unchanged,
                            hypothesis_pairs, method_key, parse_key, threshold_table)
@@ -74,8 +76,7 @@ class Layout:
     months: list[int]
     pre_fit: np.ndarray            # positions in train: pre-deployment fit slice
     pre_scored: np.ndarray         # positions in train: pre-deployment scored slice
-    y_test: np.ndarray             # evaluation only
-    y_pre_scored: np.ndarray       # H4e choice only
+    y_test: np.ndarray             # evaluation only (no month-1 label is ever read)
     labels: str                    # "isFraud" or "synthetic"
 
 
@@ -93,7 +94,7 @@ def real_layout(names) -> Layout:
     fit, scored = ieee_stress.split_days(day[tr])
     return Layout(df.loc[tr, names].reset_index(drop=True), df.loc[te, names].reset_index(drop=True),
                   day[tr], day[te], month[te], data.ieee_cis_week(day)[te],
-                  list(data.IEEE_TEST_MONTHS), fit, scored, y[te], y[tr][scored], LABEL)
+                  list(data.IEEE_TEST_MONTHS), fit, scored, y[te], LABEL)
 
 
 def dry_layout(names) -> Layout:
@@ -110,7 +111,7 @@ def dry_layout(names) -> Layout:
     return Layout(month1.loc[tr, names].reset_index(drop=True),
                   month1.loc[te, names].reset_index(drop=True), d_tr, d_te, month,
                   d_te - d_te.min(), sorted(set(DRY_MONTHS.values())), fit, scored,
-                  y[te], y[tr][scored], "synthetic")
+                  y[te], "synthetic")
 
 
 # ---------------------------------------------------------------- fitting (label-free)
@@ -391,12 +392,11 @@ def score_drift_context(fitted: Fitted, rows: dict, cfg) -> pd.DataFrame:
 
 # ---------------------------------------------------------------- freeze-v3 analyses
 
-def pre_deployment(lay: Layout, names, pool, seeds, budgets, ensembles, primary) -> tuple:
-    """Days 0-20 -> 21-29 (dry: 0-14 -> 15-20): r per member, E-stress sets, chosen single."""
+def pre_deployment(lay: Layout, names, pool, seeds, budgets, ensembles) -> tuple:
+    """Days 0-20 -> 21-29 (dry: 0-14 -> 15-20): r per member and the E-stress sets. Label-free."""
     X_fit, X_sc, _ = ieee_stress.features_for(lay.train, lay.pre_fit, lay.pre_scored, names)
     sl = lof_diag.slice_scores(X_fit, X_sc, pool, seeds)
-    d_sc = lay.day_train[lay.pre_scored]
-    r_rows, sets, chosen_rows = [], [], []
+    r_rows, sets = [], []
     for b in budgets:
         passed = set()
         for m in pool:
@@ -411,18 +411,17 @@ def pre_deployment(lay: Layout, names, pool, seeds, budgets, ensembles, primary)
             kept, fb = guard.kept_members(members, passed)
             sets.append({"budget": b, "ensemble": e, "kept": "+".join(kept), "fallback": fb,
                          "changed": kept != list(members)})
-        for m in pool:
-            fp = guard.daily_fp(sl[m][1], lay.y_pre_scored, d_sc, b)
-            chosen_rows.append({"budget": b, "member": m, "fp_sum": float(fp.fp_at_k.sum())})
-    ch = pd.DataFrame(chosen_rows)
-    ch["chosen"] = False
-    for b, g in ch.groupby("budget"):
-        ch.loc[g.fp_sum.idxmin(), "chosen"] = True        # first in pool order on a tie
-    return pd.DataFrame(r_rows), pd.DataFrame(sets), ch
+    return pd.DataFrame(r_rows), pd.DataFrame(sets)
 
 
-def rq4_methods(fitted: Fitted, lay: Layout, budget, ensembles, sets: pd.DataFrame, primary):
-    """Test scores of every RQ4 method at one budget: singles, static, guarded, E-stress."""
+def robust_scores(fitted: Fitted, ensembles) -> dict[str, tuple[np.ndarray, np.ndarray]]:
+    """Train-percentile + median of every ensemble (freeze-v3 robust_fusion): (train, test)."""
+    return {e: robust_fusion.fuse_set(fitted.train, fitted.test, members, *robust_fusion.ROBUST)
+            for e, members in ensembles.items()}
+
+
+def rq4_methods(fitted: Fitted, lay: Layout, budget, ensembles, sets: pd.DataFrame, primary, robust):
+    """Test scores of every RQ4 method at one budget: singles, static, guarded, E-stress, robust."""
     singles = list(fitted.singles)
     md, gscores, dec = guard.guarded(fitted.train, fitted.test, lay.day_test, ensembles, budget)
     scores = {m: fitted.test[m] for m in singles}
@@ -431,7 +430,64 @@ def rq4_methods(fitted: Fitted, lay: Layout, budget, ensembles, sets: pd.DataFra
         scores[f"guarded:{e}"] = gscores[e]
         kept = sets[(sets.budget == budget) & (sets.ensemble == e)].kept.iloc[0].split("+")
         scores[f"stress:{e}"] = guard.fuse_members(fitted.train, fitted.test, kept)[1]
+        scores[f"robust:{e}"] = robust[e][1]
     return scores, md, dec
+
+
+def day_alerts(train: np.ndarray, test: np.ndarray, day: np.ndarray, q: float) -> tuple[np.ndarray, np.ndarray]:
+    """Alerts (summed over seeds) and rows x seeds per test day (sorted days), frozen threshold."""
+    thr = fit_thresholds(train, q)
+    a = np.atleast_2d(test) > thr[:, None]
+    days = np.unique(day)
+    return (np.array([a[:, day == d].sum() for d in days], dtype=np.float64),
+            np.array([(day == d).sum() * len(thr) for d in days], dtype=np.float64))
+
+
+def month_deviation(A: np.ndarray, N: np.ndarray, M: np.ndarray, q: float, counts=None) -> float:
+    """H4r (i): mean over months of |log(month alert rate / (1 - q))|; a month without an alert
+    counts as 0.5 alert (frozen_stress_v3.json H4r.i_threshold.zero_alert_month)."""
+    w = np.ones(len(A)) if counts is None else np.asarray(counts, dtype=np.float64)
+    a, n = (A * w) @ M, (N * w) @ M
+    r = np.maximum(a, 0.5) / (n * round(1 - q, 12))
+    return float(np.mean(np.abs(np.log(r))))
+
+
+def h4r_threshold(methods: dict, lay: Layout, q: float, C: np.ndarray, pairs, roles) -> pd.DataFrame:
+    """dD with the day-block resamples for every (method, comparator) pair; methods: name ->
+    (train, test) scores."""
+    days = np.unique(lay.day_test)
+    month_of_day = {int(d): int(m) for d, m in zip(lay.day_test, lay.month_test)}
+    M = np.array([[month_of_day[int(d)] == mo for mo in lay.months] for d in days], dtype=np.float64)
+    AN = {k: day_alerts(tr, te, lay.day_test, q) for k, (tr, te) in methods.items()}
+
+    def dev(k, w=None):
+        return month_deviation(*AN[k], M, q, w)
+    rows = []
+    for a, c in pairs:
+        boot = np.array([dev(a, w) - dev(c, w) for w in C])
+        lo, hi = bootstrap.percentile_ci(boot)
+        rows.append({"q": q, "method": a, "comparator": c, "D_method": dev(a), "D_comparator": dev(c),
+                     "d_D": dev(a) - dev(c), "ci_low": lo, "ci_high": hi,
+                     "ci_entirely_below_0": bool(hi < 0), "ci_entirely_above_0": bool(lo > 0),
+                     "role": roles.get((a, c), "descriptive")})
+    return pd.DataFrame(rows)
+
+
+def bound_monthly(fitted: Fitted, lay: Layout, ensembles, mr: pd.DataFrame, q: float) -> pd.DataFrame:
+    """Label-free bound check per month (freeze-v3 hypotheses.bound_check): b = 0 and b = 1 with
+    the broken member = the member with the largest month r at its own month-1 threshold."""
+    out = []
+    for mo in lay.months:
+        cols = lay.month_test == mo
+        test = {m: np.atleast_2d(fitted.test[m])[:, cols] for m in fitted.singles}
+        r_mo = mr[mr.month == mo].set_index("member").r
+        for e, members in ensembles.items():
+            worst = r_mo.loc[list(members)].idxmax()
+            for broken in ([], [worst]):
+                t = robust_fusion.bound_check(fitted.train, test, list(members), broken, q)
+                out.append(t.assign(ensemble=e, month=mo,
+                                    broken_r=float(r_mo[worst]) if broken else np.nan))
+    return pd.concat(out, ignore_index=True)
 
 
 def daily_table(scores: dict, y, day, budget) -> pd.DataFrame:
@@ -538,12 +594,34 @@ def rq4_deltas(D: pd.DataFrame, C: np.ndarray, singles, pairs, budget, roles: di
     return pd.DataFrame(rows)
 
 
-def rq4_hypothesis_rows(dl: pd.DataFrame, dec: pd.DataFrame, h4a_row: dict, h4d: dict, v3: dict) -> pd.DataFrame:
+def rq4_hypothesis_rows(dl: pd.DataFrame, thr: pd.DataFrame, dec: pd.DataFrame, h4a_row: dict,
+                        h4d: dict, v3: dict) -> pd.DataFrame:
+    """H4r (main), H4a, H4b, H4c, H4d. A member breaks if the guard excludes it from E-all on
+    at least one test day at the primary budget (frozen_stress_v3.json breaks)."""
     hyp = v3["hypotheses"]
     broke = dec.groupby("ensemble")["changed"].any().to_dict()
-    rows = [{**h4a_row, "rule": hyp["H4a"]["supported_if"], "status": "decided"}]
+    any_break = bool(broke.get("E-all", False))
     d = dl.set_index("role")
-    for h, ens in (("H4b", "E-all"), ("H4c", "E-bench"), ("H4e", "E-bench")):
+    ti = thr.set_index("role").loc["H4r (i)"]
+    tii = d.loc["H4r (ii)"]
+    i_ok = bool(ti.ci_entirely_below_0) if any_break else not bool(ti.ci_entirely_above_0)
+    ii_ok = not bool(tii.ci_entirely_above_0)
+    if any_break:
+        i_verdict, i_status = ("supported" if i_ok else "not supported"), "decided"
+    else:
+        i_verdict, i_status = ("no harm shown" if i_ok else "worse"), "no member broke: no-harm check"
+    rows = [{"hypothesis": "H4r (i)", "estimate": ti.d_D, "ci_low": ti.ci_low, "ci_high": ti.ci_high,
+             "comparison": f"{ti.method} vs {ti.comparator}", "verdict": i_verdict, "status": i_status,
+             "rule": hyp["H4r"]["i_threshold"]["supported_if"]},
+            {"hypothesis": "H4r (ii)", "estimate": tii.d_fp, "ci_low": tii.ci_low, "ci_high": tii.ci_high,
+             "comparison": f"{tii.method} vs {tii.comparator}",
+             "verdict": "no harm shown" if ii_ok else "worse", "status": "decided",
+             "rule": hyp["H4r"]["ii_budget"]["supported_if"]},
+            {"hypothesis": "H4r", "verdict": "supported" if (i_ok and ii_ok) else "not supported",
+             "status": "decided" if any_break else "no member broke: part (i) read as a no-harm check",
+             "rule": hyp["H4r"]["supported_if"]},
+            {**h4a_row, "rule": hyp["H4a"]["supported_if"], "status": "decided"}]
+    for h, ens in (("H4b", "E-all"), ("H4c", "E-bench")):
         r = d.loc[h]
         if h == "H4b":
             verdict = "supported" if r.ci_entirely_below_0 else "not supported"
@@ -552,8 +630,7 @@ def rq4_hypothesis_rows(dl: pd.DataFrame, dec: pd.DataFrame, h4a_row: dict, h4d:
         status = "decided"
         if not broke.get(ens, False):
             status = {"H4b": "not testable: no member broke (dFP = 0 by identity)",
-                      "H4c": "descriptive: no member broke (dFP = 0 by identity)",
-                      "H4e": "decided: no member broke, so E-guard(E-bench) = static E-bench"}[h]
+                      "H4c": "descriptive: no member broke (dFP = 0 by identity)"}[h]
         rows.append({"hypothesis": h, "estimate": r.d_fp, "ci_low": r.ci_low, "ci_high": r.ci_high,
                      "comparison": f"{r.method} vs {r.comparator}", "verdict": verdict,
                      "status": status, "rule": hyp[h]["supported_if"]})
@@ -665,35 +742,47 @@ def main(argv: list[str]) -> None:
     log("H3b and context done")
 
     # freeze-v3
-    pre_r, sets, chosen = pre_deployment(lay, names, pool, seeds, budgets, ensembles, primary)
+    pre_r, sets = pre_deployment(lay, names, pool, seeds, budgets, ensembles)
+    robust = robust_scores(fitted, ensembles)
     C, _ = rq4_counts(lay, resamples, seed)
+    q_main = v3["hypotheses"]["H4r"]["i_threshold"]["q"]
+    thr_methods = {f"robust:{e}": robust[e] for e in ensembles}
+    thr_methods.update({f"static:{e}": (fitted.train[method_key(e, *primary)],
+                                        fitted.test[method_key(e, *primary)]) for e in ensembles})
+    thr_pairs = [(f"robust:{e}", f"static:{e}") for e in ensembles]
+    h4r_thr = pd.concat([h4r_threshold(thr_methods, lay, q, C, thr_pairs,
+                                       {("robust:E-all", "static:E-all"): "H4r (i)"} if q == q_main else {})
+                         for q in sorted({q_main, *quantiles}, reverse=True)], ignore_index=True)
+    log("H4r threshold mode done")
     rq4_rows, md_all, dec_all, daily_all, h4a_row, h4a_pairs = [], [], [], [], None, None
     for b in budgets:
-        scores, md, dec = rq4_methods(fitted, lay, b, ensembles, sets, primary)
+        scores, md, dec = rq4_methods(fitted, lay, b, ensembles, sets, primary, robust)
         D = daily_table(scores, y, lay.day_test, b)
-        ch = chosen[(chosen.budget == b) & chosen.chosen].member.iloc[0]
         pairs, roles = [], {}
         for e in ensembles:
-            pairs += [(f"guarded:{e}", f"static:{e}"), (f"stress:{e}", f"static:{e}"),
-                      (f"guarded:{e}", bootstrap.MEDIAN), (f"guarded:{e}", bootstrap.ORACLE),
-                      (f"guarded:{e}", ch)]
+            pairs += [(f"robust:{e}", f"static:{e}"), (f"guarded:{e}", f"static:{e}"),
+                      (f"guarded:{e}", f"robust:{e}"), (f"stress:{e}", f"static:{e}")]
+        for m in ("guarded:E-bench", "robust:E-all", "static:E-bench"):          # H4e, descriptive
+            pairs += [(m, bootstrap.MEDIAN), (m, bootstrap.ORACLE)]
         if b == primary_budget:
-            roles = {("guarded:E-all", "static:E-all"): "H4b",
-                     ("guarded:E-bench", "static:E-bench"): "H4c",
-                     ("guarded:E-bench", ch): "H4e"}
+            roles = {("robust:E-all", "static:E-all"): "H4r (ii)",
+                     ("guarded:E-all", "static:E-all"): "H4b",
+                     ("guarded:E-bench", "static:E-bench"): "H4c"}
             h4a_row, h4a_pairs = h4a(pre_r, md, lay, b, C, list(fitted.singles))
             mr = monthly_r(md, lay, b)
             h4d_res, h4d_t = h4d(fitted, mr[mr.member.isin(fitted.singles)], b)
             drift_t, slopes = drift_slopes(lay, rows, mr[mr.member.isin(fitted.singles)])
+            bounds = bound_monthly(fitted, lay, ensembles, mr, guard.quantile(b))
             dec_primary = dec
-        dl = rq4_deltas(D, C, fitted.singles, pairs, b, roles).assign(chosen_single=ch)
-        rq4_rows.append(dl)
+        rq4_rows.append(rq4_deltas(D, C, fitted.singles, pairs, b, roles))
         md_all.append(md.assign(budget=b))
         dec_all.append(dec.assign(budget=b))
-        daily_all.append(D.reset_index().melt(id_vars="day", var_name="method", value_name="fp_at_k").assign(budget=b))
+        daily_all.append(D.reset_index().melt(id_vars="day", var_name="method",
+                                              value_name="fp_at_k").assign(budget=b))
         log(f"RQ4 budget {b} done")
     rq4 = pd.concat(rq4_rows, ignore_index=True)
-    rq4_hyp = rq4_hypothesis_rows(rq4[rq4.budget == primary_budget], dec_primary, h4a_row, h4d_res, v3)
+    rq4_hyp = rq4_hypothesis_rows(rq4[rq4.budget == primary_budget], h4r_thr, dec_primary, h4a_row,
+                                  h4d_res, v3)
 
     out.mkdir(parents=True, exist_ok=True)
     c = state["commit"]
@@ -701,7 +790,7 @@ def main(argv: list[str]) -> None:
              "e3_deltas": deltas, "v1_hypotheses": v1_hyp, "e4_threshold_monthly": thr_m,
              "h3a": h3a_t, "h3b_weekly": h3b_t, "context_adtk": adtk_t,
              "context_score_drift": sdrift, "rq4_pre_deployment_r": pre_r,
-             "rq4_e_stress_sets": sets, "rq4_chosen_single": chosen,
+             "rq4_e_stress_sets": sets, "rq4_h4r_threshold": h4r_thr, "rq4_bound_check": bounds,
              "rq4_member_days": pd.concat(md_all, ignore_index=True),
              "rq4_guard_decisions": pd.concat(dec_all, ignore_index=True),
              "rq4_daily_fp": pd.concat(daily_all, ignore_index=True), "rq4_deltas": rq4,

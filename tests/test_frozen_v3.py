@@ -26,8 +26,12 @@ def test_loads_and_matches_the_code(cfg):
 def test_hypotheses_follow_the_agreed_design(cfg, v1):
     h = cfg["hypotheses"]
     assert set(f3.HYPOTHESES) <= set(h)
-    assert h["H4b"]["budget"] == h["H4c"]["budget"] == h["H4e"]["budget"] == v1["budgets"]["ieee_cis"]["primary"]
+    assert h["H4b"]["budget"] == h["H4c"]["budget"] == v1["budgets"]["ieee_cis"]["primary"]
     assert h["H4d"]["status"].startswith("exploratory") and "developed after seeing ULB" in h["H4d"]["status"]
+    assert h["H4r"]["method"] == "E-all, train-percentile + median" and h["H4r"]["i_threshold"]["q"] == 0.98
+    assert cfg["robust_fusion"]["label"] == "developed on ULB" and h["H4e"]["status"].startswith("descriptive")
+    assert "H4r part (i) becomes a no-harm check" in cfg["if_no_member_breaks"]
+    assert list(h)[0] == "H4r"                                   # the main RQ4 hypothesis comes first
     assert "members x months" in h["H4a"]["statistic"] and "|log r_m|" in h["H4a"]["statistic"]
     assert cfg["pre_deployment"]["use"].endswith("not used for H4b")
 
@@ -90,14 +94,29 @@ BREAKS = {
     "H4b other budget": _set(("hypotheses", "H4b", "budget"), 0.01),
     "H4b other method": _set(("hypotheses", "H4b", "method"), "E-guard(E-bench)"),
     "H4c other comparator": _set(("hypotheses", "H4c", "comparator"), "static E-all"),
-    "H4e other comparator": _set(("hypotheses", "H4e", "comparator"), "oracle_best_single"),
+    "H4e decided": _set(("hypotheses", "H4e", "status"), "decided"),
+    "H4e reads month-1 labels": _set(("hypotheses", "H4e", "status"), "descriptive, chosen with month-1 labels"),
+    "H4d in the main text": _set(("hypotheses", "H4d", "status"), "exploratory, main text"),
+    "bound check decided": _set(("hypotheses", "bound_check", "status"), "decided"),
+    "no ULB label": _set(("development_data",), "ULB was used"),
+    "robust not percentile": _set(("robust_fusion", "calibration"), "min-max"),
+    "robust not median": _set(("robust_fusion", "aggregation"), "mean"),
+    "robust label missing": _set(("robust_fusion", "label"), "developed on ADBench"),
+    "H4r other method": _set(("hypotheses", "H4r", "method"), "E-bench, train-percentile + median"),
+    "H4r other comparator": _set(("hypotheses", "H4r", "comparator"), "E-all, train-percentile + mean"),
+    "H4r (i) other criterion": _set(("hypotheses", "H4r", "i_threshold", "supported_if"), "dD < 0"),
+    "H4r (ii) other criterion": _set(("hypotheses", "H4r", "ii_budget", "supported_if"), "the CI lies entirely below 0"),
+    "H4r (ii) monthly K": _set(("hypotheses", "H4r", "ii_budget", "statistic"), "dFP at budget 0.02, monthly K"),
+    "H4r (i) other q": _set(("hypotheses", "H4r", "i_threshold", "q"), 0.99),
+    "breaks section missing": _set(("breaks",), DELETE),
+    "no-break case without H4r": _set(("if_no_member_breaks",), "H4b, H4c, H4d and H4e as stated"),
     "H4b other criterion": _set(("hypotheses", "H4b", "supported_if"), "the CI does not lie above 0"),
     "H4a other criterion": _set(("hypotheses", "H4a", "supported_if"), "rho > 0"),
     "H4a other q": _set(("hypotheses", "H4a", "statistic"), lambda s: s.replace("q = 0.98", "q = 0.99")),
     "H4d other q": _set(("hypotheses", "H4d", "statistic"), lambda s: s.replace("q = 0.98", "q = 0.99")),
     "monthly K": _set(("evaluation", "daily_budget"), "K = ceil(budget x n) per month"),
     "other resamples": _set(("evaluation", "bootstrap"), "transaction-level"),
-    "no-break case incomplete": _set(("if_no_member_breaks",), "H4b is not testable"),
+    "no-break case incomplete": _set(("if_no_member_breaks",), "H4r and H4b are not testable"),
     "removed incomplete": _set(("removed", "sead"), DELETE),
 }
 
@@ -132,6 +151,11 @@ def test_code_check_catches_a_changed_constant(cfg, monkeypatch):
     monkeypatch.setattr(guard, "C", 3)
     monkeypatch.setattr(guard, "MIN_MEMBERS", 1)
     with pytest.raises(RuntimeError, match="min_members"):
+        f3.check_code_matches(cfg)
+    monkeypatch.setattr(guard, "MIN_MEMBERS", 2)
+    from thesis import robust_fusion
+    monkeypatch.setattr(robust_fusion, "ROBUST", ("minmax", "median"))
+    with pytest.raises(RuntimeError, match="robust configuration"):
         f3.check_code_matches(cfg)
 
 

@@ -22,7 +22,7 @@ def small_layout(days_per_month=(2, 3), rows_per_day=4, seed=0):
     n = len(day)
     return r.Layout(pd.DataFrame({"a": rng.normal(size=10)}), pd.DataFrame({"a": rng.normal(size=n)}),
                     np.zeros(10, int), day, month, day - 30, [2, 3], np.arange(5), np.arange(5, 10),
-                    rng.integers(0, 2, n), rng.integers(0, 2, 5), "synthetic")
+                    rng.integers(0, 2, n), "synthetic")
 
 
 def test_day_picks_are_the_freeze_v1_draws():
@@ -102,21 +102,63 @@ def test_h4a_point_is_spearman_of_abs_log_over_members_x_months():
     assert row["verdict"] == ("supported" if row["ci_low"] > 0 else "not supported")
 
 
-def test_no_break_statuses():
-    v3 = {"hypotheses": {h: {"supported_if": "x", "status": "exploratory"} for h in
-                         ("H4a", "H4b", "H4c", "H4d", "H4e")}}
-    dl = pd.DataFrame([{"role": h, "d_fp": 0.0 if h != "H4e" else 2.0, "ci_low": -1.0, "ci_high": 1.0,
-                        "ci_entirely_below_0": False, "ci_entirely_above_0": False, "method": "m",
-                        "comparator": "c"} for h in ("H4b", "H4c", "H4e")])
-    dec = pd.DataFrame({"ensemble": ["E-all", "E-bench"], "changed": [False, False]})
-    t = r.rq4_hypothesis_rows(dl, dec, {"hypothesis": "H4a"}, {"rho": 0.1}, v3).set_index("hypothesis")
-    assert t.loc["H4b", "status"].startswith("not testable")
-    assert t.loc["H4c", "status"].startswith("descriptive")
-    assert t.loc["H4e", "status"].startswith("decided")
-    dec2 = pd.DataFrame({"ensemble": ["E-all", "E-bench"], "changed": [True, False]})
-    t2 = r.rq4_hypothesis_rows(dl, dec2, {"hypothesis": "H4a"}, {"rho": 0.1}, v3).set_index("hypothesis")
-    assert t2.loc["H4b", "status"] == "decided" and t2.loc["H4b", "verdict"] == "not supported"
+def hyp_inputs(i_low, i_high, ii_low, ii_high, changed_all, changed_bench=False):
+    v3 = {"hypotheses": {"H4r": {"supported_if": "both", "i_threshold": {"supported_if": "i"},
+                                 "ii_budget": {"supported_if": "ii"}},
+                         **{h: {"supported_if": "x", "status": "exploratory"} for h in ("H4a", "H4b", "H4c", "H4d")}}}
+    row = lambda role, lo, hi, **k: {"role": role, "ci_low": lo, "ci_high": hi, "method": "m",
+                                     "comparator": "c", "ci_entirely_below_0": hi < 0,
+                                     "ci_entirely_above_0": lo > 0, **k}
+    dl = pd.DataFrame([row("H4r (ii)", ii_low, ii_high, d_fp=0.0), row("H4b", -1.0, 1.0, d_fp=0.0),
+                       row("H4c", -1.0, 1.0, d_fp=0.0)])
+    thr = pd.DataFrame([row("H4r (i)", i_low, i_high, d_D=-0.1)])
+    dec = pd.DataFrame({"ensemble": ["E-all", "E-bench"], "changed": [changed_all, changed_bench]})
+    return r.rq4_hypothesis_rows(dl, thr, dec, {"hypothesis": "H4a"}, {"rho": 0.1}, v3).set_index("hypothesis")
 
+
+def test_h4r_decision_when_a_member_breaks():
+    t = hyp_inputs(-0.5, -0.1, -3.0, 2.0, True)
+    assert t.loc["H4r (i)", "verdict"] == "supported" and t.loc["H4r (ii)", "verdict"] == "no harm shown"
+    assert t.loc["H4r", "verdict"] == "supported" and t.loc["H4r", "status"] == "decided"
+    t = hyp_inputs(-0.5, 0.1, -3.0, 2.0, True)                 # (i) CI crosses 0
+    assert t.loc["H4r (i)", "verdict"] == "not supported" and t.loc["H4r", "verdict"] == "not supported"
+    t = hyp_inputs(-0.5, -0.1, 0.5, 2.0, True)                 # (ii) CI entirely above 0: worse
+    assert t.loc["H4r (ii)", "verdict"] == "worse" and t.loc["H4r", "verdict"] == "not supported"
+    assert t.loc["H4b", "status"] == "decided" and t.loc["H4b", "verdict"] == "not supported"
+
+
+def test_no_break_turns_h4r_i_into_a_no_harm_check():
+    t = hyp_inputs(-0.5, 0.1, -3.0, 2.0, False)                # crosses 0: no harm shown
+    assert t.loc["H4r (i)", "verdict"] == "no harm shown" and t.loc["H4r (i)", "status"].startswith("no member broke")
+    assert t.loc["H4r", "verdict"] == "supported"
+    t = hyp_inputs(0.1, 0.5, -3.0, 2.0, False)                 # entirely above 0: worse
+    assert t.loc["H4r (i)", "verdict"] == "worse" and t.loc["H4r", "verdict"] == "not supported"
+    assert t.loc["H4b", "status"].startswith("not testable") and t.loc["H4c", "status"].startswith("descriptive")
+    assert "H4e" not in t.index                                # descriptive rows live in rq4_deltas
+
+
+def test_month_deviation_with_weights_and_zero_alert_months():
+    A = np.array([2.0, 0.0, 0.0])                              # day 0 (month a), days 1-2 (month b)
+    N = np.array([100.0, 100.0, 100.0])
+    M = np.array([[1, 0], [0, 1], [0, 1]], dtype=float)
+    q = 0.98                                                    # target 0.02
+    # month a: 2 / (100 * 0.02) = 1 -> 0; month b: 0 alerts -> 0.5 / (200 * 0.02) = 0.125
+    assert r.month_deviation(A, N, M, q) == pytest.approx(np.mean([0.0, abs(np.log(0.125))]))
+    w = np.array([2, 1, 0])                                     # day 0 twice: month a r = 4/(200*0.02) = 1
+    assert r.month_deviation(A, N, M, q, w) == pytest.approx(np.mean([0.0, abs(np.log(0.5 / 2))]))
+
+
+def test_h4r_threshold_uses_training_thresholds_and_the_resamples():
+    lay = small_layout((2, 3))
+    n = len(lay.day_test)
+    tr = np.arange(100.0)[None, :]                              # q 0.9 -> threshold 89.1
+    good = np.where(np.arange(n) % 10 == 0, 95.0, 0.0)[None, :]   # 10% of rows alert
+    bad = np.full((1, n), 95.0)                                 # every row alerts
+    C, _ = r.rq4_counts(lay, 40, 0)
+    t = r.h4r_threshold({"g": (tr, good), "b": (tr, bad)}, lay, 0.9, C, [("g", "b")],
+                        {("g", "b"): "H4r (i)"}).iloc[0]
+    assert t.D_comparator == pytest.approx(abs(np.log(10.0)))      # rate 1 / 0.1
+    assert t.d_D < 0 and t.ci_entirely_below_0 and t.role == "H4r (i)"
 
 def test_budget_sums_take_baselines_on_the_month_sums():
     rows = []
@@ -163,7 +205,8 @@ def test_real_layout_on_a_fake_file(tmp_path, monkeypatch):
     assert lay.day_train.max() == 29 and lay.day_test.min() == 30
     assert lay.day_train[lay.pre_fit].max() == 20 and set(lay.day_train[lay.pre_scored]) == set(range(21, 30))
     assert len(lay.pre_fit) == 21 * 3 and len(lay.pre_scored) == 9 * 3
-    assert lay.labels == "isFraud" and len(lay.y_pre_scored) == len(lay.pre_scored)
+    assert lay.labels == "isFraud" and len(lay.y_test) == len(lay.test)
+    assert not any("pre" in f and f.startswith("y") for f in r.Layout.__dataclass_fields__)  # no month-1 label
 
 
 def test_real_run_refuses_without_the_freeze_v3_tag(monkeypatch):

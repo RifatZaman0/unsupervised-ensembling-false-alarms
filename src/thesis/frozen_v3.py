@@ -11,20 +11,21 @@ import json
 import re
 from pathlib import Path
 
-from thesis import data, fragility, frozen, guard, ieee_stress
+from thesis import data, fragility, frozen, fusion, guard, ieee_stress, robust_fusion
 from thesis.paths import REPO
 
 FROZEN_V3 = REPO / "frozen_stress_v3.json"
-REQUIRED = ("name", "scope", "builds_on", "rq4", "statistic", "guard", "pre_deployment",
-            "evaluation", "hypotheses", "if_no_member_breaks", "removed", "runner")
-HYPOTHESES = ("H4a", "H4b", "H4c", "H4d", "H4e", "drift_slope", "multiplicity")
-DECIDED = ("H4a", "H4b", "H4c", "H4e")
+REQUIRED = ("name", "scope", "builds_on", "development_data", "rq4", "robust_fusion", "statistic",
+            "guard", "pre_deployment", "evaluation", "hypotheses", "breaks", "if_no_member_breaks",
+            "removed", "runner")
+HYPOTHESES = ("H4r", "H4a", "H4b", "H4c", "H4d", "H4e", "bound_check", "drift_slope", "multiplicity")
+DECIDED = ("H4r", "H4a", "H4b", "H4c")
 STALE = re.compile(r"\b(pending|candidate|proposed|draft|awaiting|tentative|to be (?:decided|confirmed))\b",
                    re.IGNORECASE)
-RQ4_TEXT = ("Can label-free information about how each ensemble member's alert rate changes over "
-            "time (a) be measured on the training window to predict, before deployment, which "
-            "members will break, and (b) be used during deployment to exclude breaking members "
-            "and reduce false alarms at a fixed daily budget?")
+RQ4_TEXT = ("When one ensemble member breaks under temporal drift, can a label-free ensemble keep "
+            "its false alarms under control through its choice of calibration and fusion, without "
+            "detecting the break, and how does this compare with detecting and excluding the member "
+            "(run-time guard)?")
 
 
 def validate(cfg: dict, v1: dict, for_tag: bool = False) -> None:
@@ -52,7 +53,14 @@ def validate(cfg: dict, v1: dict, for_tag: bool = False) -> None:
     if not set(g["ensembles"]) <= set(ens) or any(ens[e]["role"] == "alias" for e in g["ensembles"]):
         raise ValueError(f"guard.ensembles {g['ensembles']} must be distinct freeze-v1 ensembles")
     if not {"E-all", "E-bench"} <= set(g["ensembles"]):
-        raise ValueError("guard.ensembles must include E-all (H4b) and E-bench (H4c, H4e)")
+        raise ValueError("guard.ensembles must include E-all (H4b) and E-bench (H4c)")
+    if "developed on ulb" not in cfg["development_data"].lower():
+        raise ValueError("development_data must say what was developed on ULB")
+    rf = cfg["robust_fusion"]
+    if not (rf["calibration"].startswith("train-percentile") and rf["aggregation"].startswith("median")):
+        raise ValueError("robust_fusion is train-percentile + median")
+    if rf["label"] != "developed on ULB":
+        raise ValueError("robust_fusion must be labelled developed on ULB")
     p = cfg["pre_deployment"]
     fit, scored = p["fit_days"], p["scored_days"]
     if not (0 <= fit[0] <= fit[1] < scored[0] <= scored[1] < data.IEEE_MONTH_DAYS):
@@ -67,16 +75,32 @@ def validate(cfg: dict, v1: dict, for_tag: bool = False) -> None:
     for h in ("H4d", "drift_slope"):
         if not hyp[h]["status"].startswith("exploratory"):
             raise ValueError(f"{h} is exploratory: no decision")
+    if "appendix only" not in hyp["H4d"]["status"]:
+        raise ValueError("H4d is reported in the appendix only")
+    for h in ("H4e", "bound_check"):
+        if not hyp[h]["status"].startswith("descriptive"):
+            raise ValueError(f"{h} is descriptive: no decision")
+    if "no month-1 labels" not in hyp["H4e"]["status"]:
+        raise ValueError("H4e reads no month-1 label")
+    r = hyp["H4r"]
+    if r["method"] != "E-all, train-percentile + median" or not r["comparator"].startswith("E-all, min-max + mean"):
+        raise ValueError("H4r compares E-all train-percentile + median with E-all min-max + mean")
+    if "entirely below 0" not in r["i_threshold"]["supported_if"]:
+        raise ValueError("H4r (i): CI of dD entirely below 0")
+    if "does not lie entirely above 0" not in r["ii_budget"]["supported_if"]:
+        raise ValueError("H4r (ii): not worse (CI not entirely above 0)")
+    if "budget 0.02, daily K" not in r["ii_budget"]["statistic"]:
+        raise ValueError("H4r (ii) uses the 2% primary budget with daily K")
     ieee = v1["budgets"]["ieee_cis"]
-    for h in ("H4b", "H4c", "H4e"):
+    if hyp["H4r"]["i_threshold"]["q"] != round(1 - ieee["primary"], 12):
+        raise ValueError("H4r (i) uses q = 1 - primary budget")
+    for h in ("H4b", "H4c"):
         if hyp[h]["budget"] != ieee["primary"]:
             raise ValueError(f"{h}: budget {hyp[h]['budget']} is not the IEEE-CIS primary {ieee['primary']}")
     if hyp["H4b"]["method"] != "E-guard(E-all)" or hyp["H4b"]["comparator"] != "static E-all":
         raise ValueError("H4b compares E-guard(E-all) with static E-all")
     if hyp["H4c"]["method"] != "E-guard(E-bench)" or hyp["H4c"]["comparator"] != "static E-bench":
         raise ValueError("H4c compares E-guard(E-bench) with static E-bench")
-    if not hyp["H4e"]["comparator"].startswith("chosen single"):
-        raise ValueError("H4e compares with the single chosen on month 1")
     if "entirely below 0" not in hyp["H4b"]["supported_if"]:
         raise ValueError("H4b uses the freeze-v1 criterion (CI entirely below 0)")
     if "entirely above 0" not in hyp["H4a"]["supported_if"]:
@@ -91,7 +115,7 @@ def validate(cfg: dict, v1: dict, for_tag: bool = False) -> None:
     boot = v1["statistics"]["bootstrap"]
     if boot["resamples"] != 1000 or boot["seed"] != 0 or not boot["ieee_cis"].startswith("month-stratified day-block"):
         raise ValueError("freeze-v1 IEEE-CIS bootstrap is not the one this file reuses")
-    for k in ("H4b", "H4c", "H4d", "H4e"):
+    for k in ("H4r", "H4b", "H4c", "H4d", "H4e"):
         if k not in cfg["if_no_member_breaks"]:
             raise ValueError(f"if_no_member_breaks must say what is reported for {k}")
     if not {"relative_to_median", "sead"} <= set(cfg["removed"]):
@@ -116,6 +140,9 @@ def check_code_matches(cfg: dict) -> None:
         "pre-deployment scored days": p["scored_days"] == list(ieee_stress.SCORED_DAYS),
         "fragility delta": f"t - {fragility.DELTA} (t - median)" in cfg["hypotheses"]["H4d"]["fragility"],
         "guard code": g["code"] == "thesis.guard",
+        "median outside the frozen configs": "median" in fusion.EXTRA_AGGREGATIONS and "median" not in fusion.AGGREGATIONS,
+        "robust configuration": robust_fusion.ROBUST == ("percentile", "median"),
+        "robust code": cfg["robust_fusion"]["code"] == "thesis.robust_fusion.fuse_set",
     }
     bad = [k for k, ok in checks.items() if not ok]
     if bad:
