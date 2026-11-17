@@ -50,9 +50,10 @@ def l2_table(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def feature_table(df: pd.DataFrame) -> pd.DataFrame:
-    k = df[df.kept]
-    return pd.DataFrame({"Feature": k.column, "Type": k.type, "Transform": k.transform,
-                         "Missing in month 1 (%)": (100 * k.missing_share_month1).map(
+    k = df[df["kept"]]            # brackets: k.transform would be DataFrame.transform
+    return pd.DataFrame({"Feature": k["column"], "Type": k["type"],
+                         "Transform": k["transform"],
+                         "Missing in month 1 (%)": (100 * k["missing_share_month1"]).map(
                              lambda v: f"{v:.2f}")})
 
 

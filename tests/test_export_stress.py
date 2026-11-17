@@ -23,6 +23,7 @@ def test_feature_table_keeps_only_kept_columns():
                        "missing_share_month1": [0.146875, 0.7], "kept": [True, False]})
     t = x.feature_table(df)
     assert list(t.Feature) == ["a"] and t.iloc[0, 3] == "14.69"
+    assert t.iloc[0].tolist() == ["a", "numerical", "median imputation", "14.69"]
 
 
 def test_compact_rules():
