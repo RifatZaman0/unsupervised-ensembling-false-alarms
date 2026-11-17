@@ -141,7 +141,7 @@ def main(argv: list[str]) -> None:
         "split of day 1; q = 0.998. Development data; no rule was chosen with these numbers.",
         "tab:ulb-stress", f"{me} (data {one_commit(dec)})",
         "results/tables/e3_ulb/stress/stress_decisions.csv, stress_deltas.csv",
-        align="l>{\\raggedright\\arraybackslash}p{4.3cm}l>{\\raggedright\\arraybackslash}p{3.3cm}r",
+        align="l>{\\raggedright\\arraybackslash}p{3.9cm}l>{\\raggedright\\arraybackslash}p{3.0cm}r",
         colsep="3pt", size="\\footnotesize"), encoding="utf-8")
     print("wrote 4 tables")
 
