@@ -1,0 +1,80 @@
+{
+ "name": "freeze-v3",
+ "draft_status": {
+  "state": "draft for the freeze-v3 review: every choice in this file awaits supervisor confirmation",
+  "awaiting_confirmation": ["rq4.main_mechanism", "guard.c", "guard.side", "guard.basis", "guard.min_members", "evaluation.daily_budget", "hypotheses.H4a", "hypotheses.H4b", "hypotheses.H4c", "hypotheses.H4d", "hypotheses.H4e", "pre_deployment", "removed"],
+  "rule": "this block is deleted before the tag; thesis.frozen_v3.validate(cfg, for_tag=True) refuses a file that still has it"
+ },
+ "written": "2026-11-17",
+ "scope": "RQ4 (the stress statistic, the run-time guard, the pre-deployment check, H4a-H4e, the drift slope) for the single IEEE-CIS run. freeze-v1 (frozen_config.json) and freeze-v2 (frozen_features_v2.json) are unchanged and apply in full; this file adds to them and overrides nothing.",
+ "builds_on": {"freeze-v1": "frozen_config.json", "freeze-v2": "frozen_features_v2.json"},
+ "development_data": "ULB (day 1 -> day 2) and IEEE-CIS month 1 (days 0-20 -> 21-29, label-free) were used to develop these rules; ULB is reported as development data, not as a test",
+
+ "rq4": {
+  "text": "Can label-free information about how each ensemble member's alert rate changes over time (a) be measured on the training window to predict, before deployment, which members will break, and (b) be used during deployment to exclude breaking members and reduce false alarms at a fixed daily budget?",
+  "main_mechanism": "run-time guard (RQ4 b); the pre-deployment check (RQ4 a) is a secondary, pre-registered test"
+ },
+
+ "statistic": {
+  "r": "r_m = alerts of member m in a window / (rows in the window x (1 - q)); an alert is a score > the member's threshold",
+  "threshold": "numpy.quantile(training scores of m, q, method 'linear'), one per IForest seed (freeze-v1 thresholds.common.rule)",
+  "q": "1 - budget, for every IEEE-CIS budget of freeze-v1 (0.005, 0.01, 0.02); the primary budget 0.02 gives q = 0.98",
+  "iforest": "alerts summed over the five seeds and rows multiplied by five (= the seed mean of the alert rate)",
+  "ties": "r = c passes. The comparison alerts <= c x (1 - q) x rows x seeds is made exactly on integers with fractions.Fraction (1 - q taken from the budget's decimal string), so a ratio that is exactly c is never moved by float rounding"
+ },
+
+ "guard": {
+  "side": "one-sided",
+  "basis": "absolute",
+  "c": 3,
+  "pass_rule": "member passes on day d if r_m,d <= c",
+  "window": "one test day (freeze-v1 day rule); r_m,d from that day's own unlabelled scores at the frozen month-1 threshold",
+  "min_members": 2,
+  "fallback": "if fewer than min_members members of an ensemble pass on a day, the static ensemble is used that day",
+  "fusion": "min-max + mean (freeze-v1 primary) of the kept members; calibrators fitted on each kept member's month-1 training scores; IForest seeds paired as in freeze-v1",
+  "ensembles": ["E-bench", "E-bench-5%", "E-all"],
+  "e_guard": "E-guard(X) = ensemble X under the guard",
+  "labels": "never used by the guard",
+  "code": "thesis.guard"
+ },
+
+ "pre_deployment": {
+  "fit_days": [0, 20],
+  "scored_days": [21, 29],
+  "fitted_on_fit_days": "freeze-v2 feature parameters, z-score, every detector (KNN/LOF fit sample of freeze-v1), thresholds",
+  "rule": "the guard rule (one-sided, absolute, c = 3, r = c passes, exact) applied to r on days 21-29 at the days 0-20 threshold",
+  "e_stress": "E-stress(X) = members of X that pass, fused with min-max + mean; static X if fewer than 2 pass",
+  "use": "reported for every ensemble and budget, descriptive; H4a uses its r; not used for H4b",
+  "labels": "never used",
+  "code": "thesis.ieee_stress.split_days and features_for"
+ },
+
+ "evaluation": {
+  "daily_budget": "every RQ4 comparison uses a fixed daily budget: K_d = ceil(budget x n_d) on each test day d (freeze-v1 k rule per day), FP@K_d with the freeze-v1 tie rule; the statistic is the sum over all test days of months 2-6. The static comparator is evaluated the same way",
+  "why_daily": "the guard decides per day, so a guarded score is comparable within a day only",
+  "freeze_v1_statistics": "the freeze-v1 analyses (H1a, H1b, H2b, H3a, H3b, E4, context) run unchanged with their monthly K",
+  "bootstrap": "the freeze-v1 IEEE-CIS resamples (month-stratified day-block, 1000 resamples, numpy.random.default_rng(0), one stream, months 2-6 in order): in each resample a drawn day contributes its own FP@K_d; H4a recomputes every monthly alert rate from the drawn days",
+  "ci": "95% percentile interval (freeze-v1)",
+  "seeds": "IForest-containing methods: FP@K_d per seed, mean over the five seeds"
+ },
+
+ "hypotheses": {
+  "H4a": {"question": "RQ4 a", "statistic": "Spearman rho over members x months (6 singles x months 2-6 = 30 pairs) between x = |log r_m| from the pre-deployment check and y = |log r_m,month| (month alert rate at the frozen month-1 threshold / (1 - q)), q = 0.98", "ranks": "average ranks for ties; log 0 = +infinity ranks as the largest deviation", "ci": "evaluation.bootstrap, y recomputed in every resample, x fixed", "supported_if": "the 95% CI of rho lies entirely above 0"},
+  "H4b": {"question": "RQ4 b", "method": "E-guard(E-all)", "comparator": "static E-all", "budget": 0.02, "statistic": "dFP = sum over test days of FP@K_d(method) - FP@K_d(comparator)", "supported_if": "the 95% CI of dFP lies entirely below 0"},
+  "H4c": {"question": "RQ4 b, no harm", "method": "E-guard(E-bench)", "comparator": "static E-bench", "budget": 0.02, "statistic": "as H4b", "supported_if": "the 95% CI of dFP does not lie entirely above 0 (no harm shown; not a non-inferiority test with a margin)"},
+  "H4d": {"status": "exploratory, developed after seeing ULB: reported as an association, no decision", "statistic": "Spearman rho over the six singles between the fragility index F_m (month-1 training scores, q = 0.98) and the mean over months 2-6 of log r_m,month (q = 0.98)", "fragility": "F_m = share of training scores > t - 0.1 (t - median), divided by (1 - q); t = the frozen threshold; IForest: mean of the five seeds; 0.1 is fixed and not tuned", "code": "thesis.fragility", "decisions": "none: no member is excluded on F"},
+  "H4e": {"question": "RQ4 linked to RQ1", "method": "E-guard(E-bench)", "comparator": "chosen single: the single with the lowest sum of FP@K_d at 0.02 on days 21-29 of month 1, every member fitted on days 0-20 (the pre-deployment fit); pool order breaks ties. Month-1 labels of days 21-29 are read for this choice only. The chosen member is then evaluated as in freeze-v1 (fitted on month 1)", "budget": 0.02, "statistic": "as H4b", "supported_if": "the 95% CI of dFP does not lie entirely above 0 (not worse; no margin)", "descriptive": "E-guard(E-all) and E-guard(E-bench-5%) against the same comparator, and every guarded ensemble against median_single and oracle_best_single, at every budget"},
+  "drift_slope": {"status": "exploratory: reported, no decision", "drift_share": "Evidently DataDriftPreset (freeze-v1 hypotheses.H3b.drift_share), reference = month 1, current = each of months 2-6", "deviation": "|r_m,month - 1| at q = 0.98 (the freeze-v1 H3a deviation divided by the target)", "statistic": "per member, the least-squares slope of the deviation on the drift share over the five months"},
+  "multiplicity": "no correction (as freeze-v1): H4a and H4b are each one-sided 2.5% tests; H4c and H4e are no-harm checks"
+ },
+
+ "if_no_member_breaks": "if the guard keeps every member of an ensemble on every test day, E-guard equals the static ensemble and dFP = 0 by identity: H4b is then reported as 'not testable: no member broke', H4c and H4e as descriptive, H4d as descriptive (as always); H4a is decided as stated (it needs no break). The member-day table of r is reported in every case",
+
+ "removed": {
+  "relative_to_median": "rules on r relative to the median member are not used: on ULB they removed KNN, the only member on target (results/tables/e3_ulb/stress/stress_deltas.csv), and in IEEE-CIS month 1 the median r was 0.039, so they flagged the members on target (results/tables/ieee_cis/stress_month1.csv)",
+  "two_sided": "the lower bound 1/c is not used: within-window undershoot came from the night hours on ULB and from a count-feature burst on days 8-13 of IEEE-CIS month 1, and on ULB the two-sided rules kept only KNN and added false alarms (results/tables/e3_ulb/stress/stress_deltas.csv)",
+  "sead": "SEAD (Shah et al. 2025) is cited as related work and not run as a baseline"
+ },
+
+ "runner": {"code": "thesis.e3_ieee", "command": "python -m thesis.e3_ieee", "runs": "once, after the freeze-v3 tag; freeze-v1 and freeze-v3 analyses together"}
+}
