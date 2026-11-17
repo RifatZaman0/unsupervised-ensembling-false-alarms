@@ -71,6 +71,16 @@ def test_alert_days_counts_alerts_at_the_fit_threshold_per_day():
     assert sc.alerts.to_dict() == {21: 0.5, 22: 1.0}               # mean over the two seeds
 
 
+def test_alert_days_threshold_is_the_linear_quantile_and_strict():
+    s_fit = np.arange(11.0)[None, :]            # q 0.8 -> 8.0 exactly; q 0.85 -> 8.5 ("lower": 8)
+    s_sc = np.array([[8.0, 8.2]])
+    d = s.alert_days({"A": (s_fit, s_sc)}, np.zeros(11, int), np.array([21, 22]), [0.8, 0.85])
+    sc = d[d.part == "scored"].set_index(["q", "day"])["alerts"]
+    assert sc[(0.8, 21)] == 0.0                 # a score equal to the threshold is no alert
+    assert sc[(0.8, 22)] == 1.0
+    assert sc[(0.85, 22)] == 0.0                # 8.2 < 8.5; method "lower" would alert
+
+
 def test_feature_tails_use_fit_window_quantiles_and_sd():
     rng = np.random.default_rng(0)
     X_fit = rng.normal(size=(20_000, 2))
