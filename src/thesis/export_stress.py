@@ -21,8 +21,7 @@ from thesis.paths import TABLES
 LOF = TABLES / "e3_ulb" / "lof"
 IEEE = TABLES / "ieee_cis"
 STRESS = TABLES / "e3_ulb" / "stress"
-RUN_LABELS = {"L2a": "random halves of day 1", "L2b": "day 1, 0--12 h to 12--24 h",
-              "L2c": "day 2 to day 1", "L2d": "day 1 to day 2 (E3)"}
+RUN_LABELS = {"L2a": "L2a", "L2b": "L2b", "L2c": "L2c", "L2d": "L2d (E3)"}
 PRIMARY_BUDGET = 0.002
 STATIC = {"{IForest+PCA+KNN}": "E-bench", "{IForest+KNN+LOF}": "E-bench-5%",
           "{IForest+PCA+ECOD+HBOS+KNN+LOF}": "E-all"}
@@ -107,8 +106,9 @@ def main(argv: list[str]) -> None:
     (LOF / "l2_controls.tex").write_text(booktabs(
         l2_table(l2),
         "Within-day and swapped controls on ULB: r = alert rate on the scored slice divided by "
-        "its target, at the fit-slice threshold for q = 0.998 (q = 0.995 in brackets). IForest: "
-        "mean of five seeds. Label-free; development data.",
+        "its target, at the fit-slice threshold for q = 0.998 (q = 0.995 in brackets). L2a: "
+        "random halves of day 1; L2b: day 1, 0--12 h to 12--24 h; L2c: day 2 to day 1; L2d: "
+        "day 1 to day 2, as in E3. IForest: mean of five seeds. Label-free; development data.",
         "tab:lof-l2", f"{me} (data {one_commit(l2)})", "results/tables/e3_ulb/lof/l2_controls.csv",
         align="lrrrr", colsep="4pt", size="\\footnotesize"), encoding="utf-8")
 
