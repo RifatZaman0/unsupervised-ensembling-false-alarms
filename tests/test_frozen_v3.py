@@ -33,17 +33,19 @@ def test_hypotheses_follow_the_agreed_design(cfg, v1):
     assert cfg["robust_fusion"]["label"] == "developed on ULB" and h["H4e"]["status"].startswith("descriptive")
     assert "H4r becomes a no-harm check" in cfg["if_no_member_breaks"]
     assert "H4r_cost stays as it is" in cfg["if_no_member_breaks"]
-    assert cfg["draft_status"]["awaiting_confirmation"] == []
+    assert cfg.get("draft_status", {}).get("awaiting_confirmation", []) == []   # also after the tag
     assert list(h)[0] == "H4r"                                   # the main RQ4 hypothesis comes first
     assert "members x months" in h["H4a"]["statistic"] and "|log r_m|" in h["H4a"]["statistic"]
     assert cfg["pre_deployment"]["use"].endswith("not used for H4b")
 
 
 def test_draft_is_refused_for_the_tag(cfg, v1):
+    draft = copy.deepcopy(cfg)
+    draft.setdefault("draft_status", {"state": "draft", "awaiting_confirmation": [], "rule": "x"})
     with pytest.raises(ValueError, match="draft_status"):
-        f3.validate(cfg, v1, for_tag=True)
+        f3.validate(draft, v1, for_tag=True)
     clean = copy.deepcopy(cfg)
-    del clean["draft_status"]
+    clean.pop("draft_status", None)
     f3.validate(clean, v1, for_tag=True)           # nothing else in the file goes stale
     stale = copy.deepcopy(clean)
     stale["guard"]["pass_rule"] += " (pending)"

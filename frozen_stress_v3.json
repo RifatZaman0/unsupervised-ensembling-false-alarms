@@ -1,10 +1,5 @@
 {
  "name": "freeze-v3",
- "draft_status": {
-  "state": "draft for the freeze-v3 review; every choice confirmed by the student on 2026-11-17 (supervisor informed); this block is deleted at the tag after the review",
-  "awaiting_confirmation": [],
-  "rule": "this block is deleted before the tag; thesis.frozen_v3.validate(cfg, for_tag=True) refuses a file that still has it"
- },
  "written": "2026-11-17",
  "scope": "RQ4 (robust fusion, the run-time guard, the pre-deployment check, the stress statistic, H4r, H4a-H4e, the bound check, the drift slope) for the single IEEE-CIS run. freeze-v1 (frozen_config.json) and freeze-v2 (frozen_features_v2.json) are unchanged and apply in full; this file adds to them and overrides nothing. The freeze-v1 primary fusion (min-max + mean) and every freeze-v1 analysis are unchanged.",
  "builds_on": {
@@ -86,7 +81,7 @@
    "zero_alert_month": "a month with no alert (summed over seeds) counts as 0.5 alert",
    "ci": "evaluation.bootstrap: every month's alert rate recomputed from the drawn days, for every triple and both fusions",
    "supported_if": "the 95% day-block CI of dD_bar lies entirely below 0",
-   "descriptive": "E-bench, E-bench-5% and E-all, each on its own row (E-all has six members); q = 0.99"
+   "descriptive": "E-bench, E-bench-5% and E-all, each on its own row (E-all has six members); q = 0.98 and 0.99 (the freeze-v1 IEEE-CIS quantiles)"
   },
   "H4r_cost": {
    "status": "pre-registered cost check of robust fusion (developed on ULB)",
@@ -101,7 +96,8 @@
    "statistic": "Spearman rho over members x months (6 singles x months 2-6 = 30 pairs) between x = |log r_m| from the pre-deployment check and y = |log r_m,month| (month alert rate at the frozen month-1 threshold / (1 - q)), q = 0.98",
    "ranks": "average ranks for ties; log 0 = +infinity ranks as the largest deviation",
    "ci": "evaluation.bootstrap, y recomputed in every resample, x fixed",
-   "supported_if": "the 95% CI of rho lies entirely above 0"
+   "supported_if": "the 95% CI of rho lies entirely above 0",
+   "undefined": "resamples with an undefined rho (a constant side) are dropped and counted, as freeze-v1 H3b"
   },
   "H4b": {
    "question": "RQ4, detect and exclude",
@@ -118,29 +114,34 @@
    "comparator": "static E-bench",
    "budget": 0.02,
    "statistic": "as H4b",
-   "supported_if": "the 95% CI of dFP does not lie entirely above 0 (no harm shown; not a non-inferiority test with a margin)"
+   "supported_if": "the 95% CI of dFP does not lie entirely above 0 (no harm shown; not a non-inferiority test with a margin)",
+   "unchanged_ensemble": "if a member breaks but the guard changes no E-bench member on any test day, dFP = 0 by identity and no harm is shown trivially; reported as such"
   },
   "H4d": {
    "status": "exploratory, developed after seeing ULB, appendix only: reported as an association, no decision",
    "statistic": "Spearman rho over the six singles between the fragility index F_m (month-1 training scores, q = 0.98) and the mean over months 2-6 of log r_m,month (q = 0.98)",
    "fragility": "F_m = share of training scores > t - 0.1 (t - median), divided by (1 - q); t = the frozen threshold; IForest: mean of the five seeds; 0.1 is fixed and not tuned",
    "code": "thesis.fragility",
-   "decisions": "none: no member is excluded on F"
+   "decisions": "none: no member is excluded on F",
+   "log_zero": "a month without an alert gives log r = -infinity, ranked as the lowest value"
   },
   "H4e": {
    "status": "descriptive only, no month-1 labels",
-   "statistic": "E-guard(E-bench), robust E-all and static E-bench against median_single and oracle_best_single (test labels, an upper bound), daily K, every budget"
+   "statistic": "E-guard(E-bench), robust E-all and static E-bench against median_single and oracle_best_single (test labels, an upper bound), daily K, every budget",
+   "ci": "evaluation.bootstrap (descriptive: no criterion)"
   },
   "bound_check": {
    "status": "descriptive, label-free",
    "statistic": "per month and IForest seed, for each ensemble under train-percentile + median at q = 0.98: the fused alert rate, the rate of rows with at least ceil(m/2) - b healthy members above the threshold, and the bound (sum of the healthy members' rates above the threshold) / (ceil(m/2) - b); b = 0, and b = 1 with the broken member = the member with the largest month r at its own month-1 threshold (q = 0.98)",
-   "code": "thesis.robust_fusion.bound_check"
+   "code": "thesis.robust_fusion.bound_check",
+   "ci": "none (descriptive, label-free)"
   },
   "drift_slope": {
    "status": "exploratory: reported, no decision",
    "drift_share": "Evidently DataDriftPreset (freeze-v1 hypotheses.H3b.drift_share), reference = month 1, current = each of months 2-6",
    "deviation": "|r_m,month - 1| at q = 0.98 (the freeze-v1 H3a deviation divided by the target)",
-   "statistic": "per member, the least-squares slope of the deviation on the drift share over the five months"
+   "statistic": "per member, the least-squares slope of the deviation on the drift share over the five months",
+   "ci": "none (five monthly points; descriptive)"
   },
   "multiplicity": "no correction (as freeze-v1): H4r, H4a and H4b are one-sided 2.5% tests; H4r-cost and H4c are no-harm checks"
  },

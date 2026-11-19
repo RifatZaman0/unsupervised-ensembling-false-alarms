@@ -82,8 +82,9 @@ class Layout:
 
 
 def real_layout(names) -> Layout:
-    """All rows of train_transaction.csv: month 1 train, months 2-6 test. Reads isFraud."""
-    df = pd.read_csv(ieee_features.RAW, usecols=[TIME, LABEL, *names])
+    """All rows of train_transaction.csv: month 1 train, months 2-6 test. isFraud is read for
+    the test rows only: the label read skips the month-1 rows."""
+    df = pd.read_csv(ieee_features.RAW, usecols=[TIME, *names])
     t = df[TIME].to_numpy()
     if not np.all(np.diff(t) >= 0):
         raise RuntimeError("TransactionDT is not sorted")
@@ -91,7 +92,12 @@ def real_layout(names) -> Layout:
     month = data.ieee_cis_month(day)
     tr, te = month == 1, month > 1
     assert t[tr].max() < t[te].min()                     # every training row strictly earlier
-    y = df[LABEL].to_numpy(dtype=np.int8)
+    n1 = int(tr.sum())
+    assert tr[:n1].all() and not tr[n1:].any()           # month 1 = the first n1 rows
+    lab = pd.read_csv(ieee_features.RAW, usecols=[TIME, LABEL], skiprows=range(1, n1 + 1))
+    assert np.array_equal(lab[TIME].to_numpy(), t[te])   # the label rows are the test rows
+    y = np.zeros(len(t), dtype=np.int8)
+    y[te] = lab[LABEL].to_numpy(dtype=np.int8)           # month-1 entries stay 0, never read
     fit, scored = ieee_stress.split_days(day[tr])
     return Layout(df.loc[tr, names].reset_index(drop=True), df.loc[te, names].reset_index(drop=True),
                   day[tr], day[te], month[te], data.ieee_cis_week(day)[te],
@@ -657,9 +663,12 @@ def rq4_hypothesis_rows(dl: pd.DataFrame, main: dict, cost: dict, dec: pd.DataFr
         else:
             v = "no harm shown" if not r.ci_entirely_above_0 else "worse"
         st = "decided"
-        if not broke.get(ens, False):
+        if not any_break:
             st = {"H4b": "not testable: no member broke (dFP = 0 by identity)",
                   "H4c": "descriptive: no member broke (dFP = 0 by identity)"}[h]
+            v = "not testable" if h == "H4b" else v
+        elif not broke.get(ens, False):
+            st = f"decided; the guard changed no {ens} member on any test day (dFP = 0 by identity)"
         rows.append({"hypothesis": h, "estimate": r.d_fp, "ci_low": r.ci_low, "ci_high": r.ci_high,
                      "comparison": f"{r.method} vs {r.comparator}", "verdict": v, "status": st,
                      "rule": hyp[h]["supported_if"]})
