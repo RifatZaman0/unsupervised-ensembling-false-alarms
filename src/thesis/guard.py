@@ -1,4 +1,4 @@
-"""Run-time guard (RQ4, proposed for freeze-v3): leave out a member on a day where its alert
+"""Run-time guard (RQ4, frozen in freeze-v3): leave out a member on a day where its alert
 rate at the frozen training threshold is more than c times the target.
 
 For member m on test day d, with q = 1 - budget and the threshold t_m = numpy.quantile(training

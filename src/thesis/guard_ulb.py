@@ -3,13 +3,14 @@
     python -m thesis.guard_ulb            # 1000 resamples per scheme, writes results/tables/e3_ulb/stress/
     python -m thesis.guard_ulb --quick    # 20 resamples, prints, writes nothing
 
-Links RQ4 to RQ1: is a guarded ensemble (thesis.guard, the rule proposed for freeze-v3:
+Links RQ4 to RQ1: is a guarded ensemble (thesis.guard, the rule frozen in freeze-v3:
 one-sided, absolute r at q = 1 - budget, c = 3, static fallback below two passing members)
 still better than the singles? Comparators at every ULB budget:
 - median_single and oracle_best_single (day-2 labels, an upper bound), as in E3;
 - chosen_single: the single with the lowest FP@K on the last 12 h of day 1, with every member
-  fitted on the first 12 h (thesis.lof_diag L2b). This reads day-1 labels; it mirrors the
-  proposed H4e comparator (best single chosen on month 1). The chosen member is then scored
+  fitted on the first 12 h (thesis.lof_diag L2b). This reads day-1 labels; it mirrors a
+  comparator considered for H4e (best single chosen on month 1) that freeze-v3 left out:
+  H4e reads no month-1 label (frozen_stress_v3.json removed.h4e_chosen_single). The chosen member is then scored
   as in E3 (fitted on day 1, scored on day 2).
 Two bootstrap schemes, the same 1000 resamples for every method: the frozen ULB scheme
 (transaction-level) and an hour-block scheme (the 24 hours of day 2 drawn with replacement,

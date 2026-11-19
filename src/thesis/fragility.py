@@ -1,4 +1,4 @@
-"""Threshold fragility index per member (exploratory, proposed for freeze-v3 as H4d).
+"""Threshold fragility index per member (exploratory, frozen in freeze-v3 as H4d).
 
     python -m thesis.fragility            # ULB day 1 and IEEE-CIS month 1, writes results/tables/
     python -m thesis.fragility --ulb      # ULB day 1 only (cached E3 scores, seconds)
