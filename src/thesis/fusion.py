@@ -17,6 +17,9 @@ log = logging.getLogger(__name__)
 
 CALIBRATIONS = ("minmax", "zscore", "percentile")
 AGGREGATIONS = ("mean", "max")
+# Robust fusion (RQ4, freeze-v3; developed on ULB): an extra option, deliberately not part of
+# FUSION_CONFIGS, so the six freeze-v1 configurations and their outputs stay as frozen.
+EXTRA_AGGREGATIONS = ("median",)
 FUSION_CONFIGS = tuple((c, a) for c in CALIBRATIONS for a in AGGREGATIONS)
 PRIMARY = ("minmax", "mean")
 # reader-facing names (figures, LaTeX, markdown); the codes above stay in CSVs
@@ -76,7 +79,7 @@ def fuse(S_train: np.ndarray, S_test: np.ndarray, calib: str = PRIMARY[0],
     S_train, S_test = np.atleast_2d(S_train), np.atleast_2d(S_test)
     if S_train.shape[1] != S_test.shape[1]:
         raise ValueError("train and test have different numbers of members")
-    if agg not in AGGREGATIONS:
+    if agg not in AGGREGATIONS + EXTRA_AGGREGATIONS:
         raise ValueError(f"unknown aggregation {agg!r}")
     cals = [Calibrator.fit(S_train[:, j], calib) for j in range(S_train.shape[1])]
     for j, c in enumerate(cals):
@@ -85,5 +88,5 @@ def fuse(S_train: np.ndarray, S_test: np.ndarray, calib: str = PRIMARY[0],
                         "set to 0", members[j] if members else f"#{j}", dataset or "?")
     C_train = np.column_stack([c.transform(S_train[:, j]) for j, c in enumerate(cals)])
     C_test = np.column_stack([c.transform(S_test[:, j]) for j, c in enumerate(cals)])
-    reduce = np.mean if agg == "mean" else np.max
+    reduce = {"mean": np.mean, "max": np.max, "median": np.median}[agg]
     return reduce(C_train, axis=1), reduce(C_test, axis=1)
