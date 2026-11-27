@@ -238,7 +238,7 @@ def latex_triples(summ: pd.DataFrame, fried: pd.DataFrame, meta: dict) -> str:
     lines = [f"% commit {meta['commit']}; source e2_summary.csv, e2_friedman.csv "
              f"({calib} + {agg})",
              "\\begin{table}[t]", "\\centering", "\\small",
-             "\\setlength{\\tabcolsep}{5pt}",          # fits the 16 cm TDK text block
+             "\\setlength{\\tabcolsep}{5pt}",          # fits the 16 cm text block
              f"\\caption{{The {len(by[budgets[0]])} detector triples "
              f"({fusion.LABELS[calib]} calibration, {fusion.LABELS[agg]} fusion) by average FP@K rank over {n} ADBench sets (1 = fewest false "
              f"alarms), sorted by the {round(budgets[0] * 100)}\\% budget. $<$ best / $<$ median: "

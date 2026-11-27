@@ -1,4 +1,4 @@
-"""Compile LaTeX snippets in the TDK paper's preamble (tdk/main.tex in the project folder).
+"""Compile LaTeX snippets in the document preamble (tdk/main.tex in the project folder).
 
 Used by the tests of every exported .tex table: a table must compile with XeLaTeX and must fit
 the text block, neither wider (no "Overfull \\hbox") nor taller (no "Float too large for page").
@@ -43,7 +43,7 @@ class Result:
 
 
 def compile_snippet(body: str, preamble: str | None = None, timeout: int = 300) -> Result:
-    """Compile `body` inside the TDK preamble with XeLaTeX; return errors and overfull boxes."""
+    """Compile `body` inside the document preamble with XeLaTeX; return errors and overfull boxes."""
     exe = xelatex()
     if exe is None:
         raise FileNotFoundError("xelatex not found")

@@ -11,9 +11,6 @@ Informatics (VIK), 2026.
 
 **Md Asiruzzaman Rifat**
 
-> The version behind the TDK paper is the tag `tdk-submitted` here and the archived repository
-> [unsupervised-ensembling-false-alarms-tdk](https://github.com/RifatZaman0/unsupervised-ensembling-false-alarms-tdk).
-
 ---
 
 ## Overview
@@ -244,8 +241,8 @@ Run the tests with:
 python -m pytest
 ```
 
-Tests that need the raw data skip until it is downloaded. The LaTeX compile tests need XeLaTeX and the TDK
-paper's preamble (`tdk/main.tex` under `THESIS_PROJECT_DIR`), so they skip here.
+Tests that need the raw data skip until it is downloaded. The LaTeX compile tests need XeLaTeX and a
+LaTeX preamble under `THESIS_PROJECT_DIR` that is not part of this repository, so they skip here.
 
 ## Pre-registration
 
@@ -292,26 +289,6 @@ each of them to the commit here. Two note lines in `results/tables/e2/ebench.md`
 - The leakage tests in `tests/` are checked to fail when a rule is broken on purpose.
 - The best member of a combination and the oracle-best single detector use test labels and are reported only
   as upper-bound references.
-
-## Citation
-
-```bibtex
-@misc{rifat2026thesis,
-  author       = {Md Asiruzzaman Rifat},
-  title        = {Unsupervised Model Ensembling for False Alarm Reduction in Anomaly Detection},
-  howpublished = {BSc thesis, Budapest University of Technology and Economics, Faculty of Electrical
-                  Engineering and Informatics},
-  year         = {2026}
-}
-
-@misc{rifat2026tdk,
-  author       = {Md Asiruzzaman Rifat},
-  title        = {Unsupervised Model Ensembling for False Alarm Reduction in Anomaly Detection},
-  howpublished = {TDK paper, Budapest University of Technology and Economics, Faculty of Electrical
-                  Engineering and Informatics},
-  year         = {2026}
-}
-```
 
 ## Acknowledgements
 

@@ -1,4 +1,4 @@
-"""TDK exports: every exported LaTeX table compiles in the TDK preamble and fits the text block,
+"""Exports: every exported LaTeX table compiles in the document preamble and fits the text block,
 the two ULB figures are drawn at the 16 cm text width with no text below 8 pt and plot the table
 values unchanged, and the LOF diagnosis reads no label.
 

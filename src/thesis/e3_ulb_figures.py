@@ -10,7 +10,7 @@ Outputs in figures/e3_ulb/ (pdf + png, commit in the file metadata):
 - threshold_check: day-2 alert rate of every single and every ensemble (primary fusion) under
   each frozen day-1 quantile threshold, against the target 1 - q.
 
-Both are drawn at the TDK text width (16 cm) with no text below 8 pt, so they are printed at
+Both are drawn at the text width (16 cm) with no text below 8 pt, so they are printed at
 scale 1 and every label stays readable. The standalone rebuild reads the tables only: it plots
 the same numbers and computes nothing new.
 """
@@ -34,7 +34,7 @@ from thesis.e2_figures import E_LIT_COLOR, INK, MUTED, OTHER_COLOR, _save  # noq
 
 COMPARATORS = {bootstrap.MEDIAN: "vs median single", bootstrap.DEFAULT_IFOREST: "vs default IForest",
                bootstrap.ORACLE: "vs oracle-best single"}
-WIDTH_CM = 16.0                  # TDK text block: 21 cm A4 minus 2 x 2.5 cm margins
+WIDTH_CM = 16.0                  # text block: 21 cm A4 minus 2 x 2.5 cm margins
 MIN_PT = 8                       # smallest text at print size
 TICK_PT, LABEL_PT, TITLE_PT = 8, 8, 9
 

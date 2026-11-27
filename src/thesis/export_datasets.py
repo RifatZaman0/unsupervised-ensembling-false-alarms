@@ -1,4 +1,4 @@
-"""Export the dataset table (the TDK paper, tag tdk-submitted) to results/tables/datasets/.
+"""Export the dataset table (first written for an earlier version of this work) to results/tables/datasets/.
 
     python -m thesis.export_datasets
 

@@ -1,4 +1,4 @@
-"""Experimental Setup tables (the TDK paper, tag tdk-submitted) to results/tables/setup/, as CSV and booktabs LaTeX.
+"""Experimental Setup tables (first written for an earlier version of this work) to results/tables/setup/, as CSV and booktabs LaTeX.
 
     python -m thesis.export_setup        (after python -m thesis.zero_variance)
 
@@ -8,7 +8,7 @@
 - runtimes:        fit + score seconds per detector (ADBench: from the score cache; ULB: day-1
                    fit, training scores only, from zero_variance.csv) and the machine they ran on
 - duplicates:      LaTeX only, from results/tables/datasets/duplicates.csv
-No detector is fitted here. Every .tex fits the 16 cm TDK text block (tests/test_tdk_exports.py).
+No detector is fitted here. Every .tex fits the 16 cm text block (tests/test_tdk_exports.py).
 """
 from __future__ import annotations
 
@@ -64,7 +64,7 @@ def booktabs(df: pd.DataFrame, caption: str, label: str, commit: str, source: st
              align: str | None = None, colsep: str | None = None,
              size: str = "\\small") -> str:
     """booktabs table; `colsep` narrows \\tabcolsep (LaTeX default 6pt) so that a wide table
-    fits the 16 cm text block of the TDK paper without changing any cell; `size` sets a long
+    fits the 16 cm text block without changing any cell; `size` sets a long
     table in a smaller font so that it fits the page height."""
     def esc(v) -> str:
         s = str(v)
