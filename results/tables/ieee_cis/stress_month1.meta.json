@@ -1,0 +1,58 @@
+{
+ "commit": "1d1c7f421df2194786f9ce8a85405580eb9524c8",
+ "dirty": false,
+ "command": "python -m thesis.ieee_stress",
+ "created_utc": "2026-11-16T23:19:13+00:00",
+ "labels_read": false,
+ "rows_read": "month 1 only (ieee_features.load_month1)",
+ "features": "freeze-v2 list (frozen_features_v2.json); medians, frequency maps and z-score fitted on the fit window",
+ "n_features": 26,
+ "fit_days": [
+  0,
+  20
+ ],
+ "scored_days": [
+  21,
+  29
+ ],
+ "sensitivity_days": [
+  21,
+  27
+ ],
+ "n_fit": 91760,
+ "n_scored": 42579,
+ "n_scored_sensitivity": 34906,
+ "quantiles": [
+  0.99,
+  0.98
+ ],
+ "iforest_seeds": [
+  0,
+  1,
+  2,
+  3,
+  4
+ ],
+ "c_values_reported": [
+  2,
+  3,
+  5
+ ],
+ "knn_lof_fit_sample": {
+  "max_rows": 30000,
+  "seed": 0
+ },
+ "threshold_rule": "numpy.quantile(fit-window scores, q), method 'linear'; alert if score > threshold",
+ "r": "alert rate on the scored slice / (1 - q); IForest: mean over seeds",
+ "constant_fit_columns": [],
+ "scoring_runtime_s": 15.9,
+ "month1": {
+  "rows_month1": 134339,
+  "rows_file": 590540,
+  "days_month1": 30,
+  "transaction_dt_first": 86400,
+  "transaction_dt_last_month1": 2678390
+ },
+ "note": "Development output before freeze-v3: label-free, month 1 only. No c is chosen here.",
+ "runtime_s": 23.7
+}

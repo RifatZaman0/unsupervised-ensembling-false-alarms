@@ -1,0 +1,17 @@
+dataset,source,split,n_rows,n_features,n_anomalies,anomaly_rate,n_train,n_test,anomalies_train,anomalies_test
+ALOI,ADBench,"stratified 60/40, 5 seeds",49534,27,1508,0.030443735615940565,29720,19814,905,603
+annthyroid,ADBench,"stratified 60/40, 5 seeds",7200,6,534,0.07416666666666667,4320,2880,320,214
+cardio,ADBench,"stratified 60/40, 5 seeds",1831,21,176,0.0961223375204806,1098,733,106,70
+letter,ADBench,"stratified 60/40, 5 seeds",1600,32,100,0.0625,960,640,60,40
+mammography,ADBench,"stratified 60/40, 5 seeds",11183,6,260,0.023249575248144506,6709,4474,156,104
+mnist,ADBench,"stratified 60/40, 5 seeds",7603,100,700,0.09206892016309351,4561,3042,420,280
+optdigits,ADBench,"stratified 60/40, 5 seeds",5216,64,150,0.028757668711656442,3129,2087,90,60
+PageBlocks,ADBench,"stratified 60/40, 5 seeds",5393,10,510,0.09456703133691823,3235,2158,306,204
+pendigits,ADBench,"stratified 60/40, 5 seeds",6870,16,156,0.022707423580786028,4122,2748,94,62
+satimage-2,ADBench,"stratified 60/40, 5 seeds",5803,36,71,0.0122350508357746,3481,2322,43,28
+shuttle,ADBench,"stratified 60/40, 5 seeds",49097,9,3511,0.0715114976475141,29458,19639,2107,1404
+thyroid,ADBench,"stratified 60/40, 5 seeds",3772,6,93,0.024655355249204668,2263,1509,56,37
+vowels,ADBench,"stratified 60/40, 5 seeds",1456,12,50,0.034340659340659344,873,583,30,20
+Waveform,ADBench,"stratified 60/40, 5 seeds",3443,21,100,0.02904443799012489,2065,1378,60,40
+Wilt,ADBench,"stratified 60/40, 5 seeds",4819,5,257,0.05333056650757419,2891,1928,154,103
+ULB,Kaggle mlg-ulb/creditcardfraud,day 1 (Time < 86400 s) / day 2,284807,29,492,0.001727485630620034,144786,140021,281,211

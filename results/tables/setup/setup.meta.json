@@ -1,0 +1,24 @@
+{
+ "commit": "1c6ad9229d4c12d400707e3090d848fd71a02f17",
+ "dirty": false,
+ "command": "python -m thesis.export_setup",
+ "created_utc": "2026-10-30T21:42:15+00:00",
+ "cache_key": "21ba8c24b9",
+ "runtimes_from": "zero_variance.csv",
+ "zero_variance_commit": "8b25943a3f5a3eed83a3f7252f8063cd10d7fe4f",
+ "duplicates_from": "../datasets/duplicates.csv",
+ "duplicates_commit": "b12667f5989f7b6145a3fe126ff0e08d0f4d07e3",
+ "files": [
+  "datasets.csv",
+  "datasets.tex",
+  "duplicates.tex",
+  "hardware.csv",
+  "hyperparameters.csv",
+  "hyperparameters.tex",
+  "runtimes.csv",
+  "runtimes.tex",
+  "versions.csv",
+  "versions.tex"
+ ],
+ "note": "ADBench runtimes come from the score cache (one fit + score per detector, dataset and seed, n_jobs 1); ULB runtimes are day-1 fits with training scores only, from thesis.zero_variance. ULB day 2 is not scored."
+}

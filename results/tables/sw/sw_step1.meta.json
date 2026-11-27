@@ -1,0 +1,95 @@
+{
+ "commit": "9f92a42f91785add388d1ba606b74dedc72ece80",
+ "dirty": false,
+ "command": "python -m thesis.sw step1",
+ "created_utc": "2026-11-20T13:37:23+00:00",
+ "prereg": "prereg_sw.md",
+ "prereg_tag": "prereg-sw",
+ "prereg_tag_commit": "9f92a42f91785add388d1ba606b74dedc72ece80",
+ "step": "Step 1: ceiling gate (training labels; diagnostic only)",
+ "cache_key": "21ba8c24b9",
+ "protocol": {
+  "zscore_inputs": true,
+  "k_rule": "ceil",
+  "pca_drop_zero_variance": true,
+  "adbench_dedup": false
+ },
+ "preprocessing": "zscore-train",
+ "detector_params": {
+  "IForest": {
+   "n_estimators": 100,
+   "max_samples": "auto"
+  },
+  "PCA": {
+   "standardization": true,
+   "min_variance_ratio": 1e-10
+  },
+  "ECOD": {},
+  "HBOS": {
+   "n_bins": 10,
+   "alpha": 0.1,
+   "tol": 0.5
+  },
+  "KNN": {
+   "n_neighbors": 5,
+   "method": "largest"
+  },
+  "LOF": {
+   "n_neighbors": 20,
+   "novelty": true
+  }
+ },
+ "budgets": [
+  0.02,
+  0.05
+ ],
+ "seeds": [
+  0,
+  1,
+  2,
+  3,
+  4
+ ],
+ "datasets": [
+  "ALOI",
+  "annthyroid",
+  "cardio",
+  "letter",
+  "mammography",
+  "mnist",
+  "optdigits",
+  "PageBlocks",
+  "pendigits",
+  "satimage-2",
+  "shuttle",
+  "thyroid",
+  "vowels",
+  "Waveform",
+  "Wilt"
+ ],
+ "calibration": "minmax fitted on training scores, not clipped",
+ "grid_step": {
+  "6": 0.1,
+  "3": 0.05
+ },
+ "n_grid": {
+  "6": 3003,
+  "3": 231
+ },
+ "k_rule": "K = ceil(budget * n), at least 1 (metrics.budget_k); K_train over n_train for tuning and selection, K_test over n_test for evaluation; ties at the K-th score split in expectation",
+ "tie_rules": "weight vectors tied on training FP@K: largest single weight, then grid order; label-selected member tied on training FP@K: first in member order; dataset outcome on seed means rounded to 9 decimals",
+ "gate": {
+  "member_set": "IForest+PCA+ECOD+HBOS+KNN+LOF",
+  "budget": 0.02,
+  "rule": "pass if tuned weights have fewer test false alarms than the label-selected member on more datasets than the reverse (seed means; ties not counted)",
+  "passed": true
+ },
+ "equal_weights_vs_e2_runs": {
+  "n_compared": 3000,
+  "n_unmatched": 0,
+  "n_not_identical": 0,
+  "max_abs_diff": 0.0
+ },
+ "runtime_s": 271.8,
+ "note": "training labels used for tuning and member selection (diagnostic); test labels only for evaluation and the oracle references; ADBench only"
+}

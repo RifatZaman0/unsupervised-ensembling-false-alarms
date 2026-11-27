@@ -1,0 +1,134 @@
+{
+ "commit": "c1f93114929baee40433a72327503bc2ec5659f7",
+ "dirty": false,
+ "command": "python -m thesis.cc step2",
+ "created_utc": "2026-11-20T17:29:17+00:00",
+ "prereg": "prereg_cc.md",
+ "prereg_tag": "prereg-cc",
+ "prereg_tag_commit": "bfaa7e5f5a344e482b07d882e1b12e3c428f21af",
+ "step": "Step 2: main test on ADBench (H-CC1 -> H-CC2 -> H-CC3, fixed sequence)",
+ "cache_key": "21ba8c24b9",
+ "protocol": {
+  "zscore_inputs": true,
+  "k_rule": "ceil",
+  "pca_drop_zero_variance": true,
+  "adbench_dedup": false
+ },
+ "preprocessing": "zscore-train (refits: fitted on the kept rows)",
+ "detector_params": {
+  "IForest": {
+   "n_estimators": 100,
+   "max_samples": "auto"
+  },
+  "PCA": {
+   "standardization": true,
+   "min_variance_ratio": 1e-10
+  },
+  "ECOD": {},
+  "HBOS": {
+   "n_bins": 10,
+   "alpha": 0.1,
+   "tol": 0.5
+  },
+  "KNN": {
+   "n_neighbors": 5,
+   "method": "largest"
+  },
+  "LOF": {
+   "n_neighbors": 20,
+   "novelty": true
+  }
+ },
+ "budgets": [
+  0.02,
+  0.05
+ ],
+ "seeds": [
+  0,
+  1,
+  2,
+  3,
+  4
+ ],
+ "datasets": [
+  "ALOI",
+  "annthyroid",
+  "cardio",
+  "letter",
+  "mammography",
+  "mnist",
+  "optdigits",
+  "PageBlocks",
+  "pendigits",
+  "satimage-2",
+  "shuttle",
+  "thyroid",
+  "vowels",
+  "Waveform",
+  "Wilt"
+ ],
+ "q": 0.05,
+ "q_sensitivity": [
+  0.02,
+  0.1
+ ],
+ "e_bench": [
+  "IForest",
+  "PCA",
+  "KNN"
+ ],
+ "cleaning": {
+  "committee": "committee score = mean of the members' cached training scores (fitted on all training rows), each min-max scaled on its training scores; the k = budget_k(q, n_train) highest rows removed, a tie block crossing the cut kept (thesis.cleaning); every member of the ensemble refitted on the kept rows",
+  "e_bench": "E-bench is cleaned by its own committee (IForest, PCA, KNN)",
+  "self": "each member removes the k rows it scores highest itself (same q and tie rule) and is refitted on its own kept rows; SC E-bench fuses the same self-cleaned IForest, PCA and KNN",
+  "members_after_committee_cleaning": "refitted on the E-all committee's kept rows"
+ },
+ "fusion": "min-max fitted on each member's training scores (its kept rows after a refit), then the mean",
+ "test": "scipy.stats.wilcoxon(cc, other, alternative=\"less\", zero_method=\"wilcox\")",
+ "alpha": 0.05,
+ "unit": "seed-mean FP@K per dataset (15 datasets), rounded to 9 decimals",
+ "hypotheses": {
+  "H-CC1": {
+   "claim": "CC E-all < plain E-all",
+   "tested": true,
+   "p_value": 0.17326085585305362,
+   "decision": "null not rejected"
+  },
+  "H-CC2": {
+   "claim": "CC E-all < plain IForest",
+   "tested": false,
+   "p_value": null,
+   "decision": "not tested (fixed sequence: H-CC1 not rejected)"
+  },
+  "H-CC3": {
+   "claim": "CC E-all < SC E-all",
+   "tested": false,
+   "p_value": null,
+   "decision": "not tested (fixed sequence: H-CC1 not rejected)"
+  }
+ },
+ "decision_rule_outcome": "H-CC1 or H-CC2 not rejected: CC is not added (at most one sentence in Future Work)",
+ "refit_all_rows_vs_cache": {
+  "n_members": 450,
+  "n_train_identical": 450,
+  "n_test_identical": 450,
+  "max_abs_diff": 0.0
+ },
+ "plain_members_vs_e1_runs": {
+  "n_compared": 900,
+  "n_unmatched": 0,
+  "n_not_identical": 0,
+  "max_abs_diff": 0.0
+ },
+ "plain_references_vs_step1_runs": {
+  "n_compared": 1500,
+  "n_unmatched": 0,
+  "n_not_identical": 0,
+  "max_abs_diff": 0.0
+ },
+ "score_cache_unchanged": true,
+ "hypotheses_rebuilt_from_csv_identical": true,
+ "figure": "results/figures/cc/cc_step2_delta_eall_2pct.pdf (+ .png)",
+ "runtime_s": 363.7,
+ "note": "training labels used only for the descriptive cleaning-quality table; test labels only for FP@K and the oracle references; refits kept in memory, not cached; ADBench only (Step 3 not run)"
+}

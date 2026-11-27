@@ -1,6 +1,6 @@
 # Top-level dependencies. Exact versions: requirements-lock.txt
 # pandas is pinned below 3: adtk 0.6.2 (unmaintained) crashes on pandas 3.x
-# ("Invalid value 'nan' for dtype 'bool'" in LevelShiftAD). Checked 2026-10-20.
+# ("Invalid value 'nan' for dtype 'bool'" in LevelShiftAD).
 numpy==2.4.6
 pandas==2.3.3
 scipy==1.17.1

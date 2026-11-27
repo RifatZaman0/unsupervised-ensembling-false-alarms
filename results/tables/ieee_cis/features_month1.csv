@@ -1,0 +1,53 @@
+column,type,missing_share_month1,distinct_values_month1,kept,reason_dropped,transform,commit
+TransactionAmt,numerical,0.0,7429,True,,"log1p, median imputation",17525fcdf7e1d9bbc619fba792387a9e3b71c280
+ProductCD,categorical,0.0,5,True,,frequency encoding,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+card1,categorical,0.0,8641,True,,frequency encoding,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+card2,categorical,0.013465933198847691,500,True,,frequency encoding,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+card3,categorical,2.233156417719352e-05,82,True,,frequency encoding,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+card4,categorical,5.955083780584938e-05,5,True,,frequency encoding,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+card5,categorical,0.005441457804509487,92,True,,frequency encoding,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+card6,categorical,5.210698308011821e-05,5,True,,frequency encoding,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+addr1,categorical,0.10463826587960309,267,True,,frequency encoding,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+addr2,categorical,0.10463826587960309,51,True,,frequency encoding,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+dist1,numerical,0.7011590081807964,1824,False,missing share >= 0.2,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+dist2,numerical,0.9126314770840932,1118,False,missing share >= 0.2,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+P_emaildomain,categorical,0.14687469759340177,60,True,,frequency encoding,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+R_emaildomain,categorical,0.6175645196108352,61,False,missing share >= 0.2,frequency encoding,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+C1,numerical,0.0,1488,True,,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+C2,numerical,0.0,919,True,,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+C3,numerical,0.0,9,True,,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+C4,numerical,0.0,1179,True,,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+C5,numerical,0.0,260,True,,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+C6,numerical,0.0,1256,True,,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+C7,numerical,0.0,1073,True,,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+C8,numerical,0.0,1158,True,,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+C9,numerical,0.0,181,True,,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+C10,numerical,0.0,1078,True,,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+C11,numerical,0.0,1369,True,,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+C12,numerical,0.0,1117,True,,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+C13,numerical,0.0,1493,True,,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+C14,numerical,0.0,1066,True,,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+D1,numerical,0.0,614,True,,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+D2,numerical,0.5868213995935655,614,False,missing share >= 0.2,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+D3,numerical,0.5775835758789332,507,False,missing share >= 0.2,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+D4,numerical,0.4563678455251267,636,False,missing share >= 0.2,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+D5,numerical,0.6528409471560753,541,False,missing share >= 0.2,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+D6,numerical,0.8618867194187838,599,False,missing share >= 0.2,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+D7,numerical,0.9347546133289663,447,False,missing share >= 0.2,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+D8,numerical,0.7817833987151906,8207,False,missing share >= 0.2,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+D9,numerical,0.7817833987151906,25,False,missing share >= 0.2,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+D10,numerical,0.31349794177416834,630,False,missing share >= 0.2,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+D11,numerical,0.7126895391509539,521,False,missing share >= 0.2,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+D12,numerical,0.884865898957116,481,False,missing share >= 0.2,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+D13,numerical,0.8964187614914507,361,False,missing share >= 0.2,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+D14,numerical,0.8812035224320562,578,False,missing share >= 0.2,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+D15,numerical,0.3367376562279011,666,False,missing share >= 0.2,median imputation,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+M1,categorical,0.6928144470332517,3,False,missing share >= 0.2,frequency encoding,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+M2,categorical,0.6928144470332517,3,False,missing share >= 0.2,frequency encoding,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+M3,categorical,0.6928144470332517,3,False,missing share >= 0.2,frequency encoding,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+M4,categorical,0.5762139066093986,4,False,missing share >= 0.2,frequency encoding,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+M5,categorical,0.6969904495343869,3,False,missing share >= 0.2,frequency encoding,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+M6,categorical,0.4729155345804271,3,False,missing share >= 0.2,frequency encoding,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+M7,categorical,0.844520206343653,3,False,missing share >= 0.2,frequency encoding,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+M8,categorical,0.844520206343653,3,False,missing share >= 0.2,frequency encoding,17525fcdf7e1d9bbc619fba792387a9e3b71c280
+M9,categorical,0.844520206343653,3,False,missing share >= 0.2,frequency encoding,17525fcdf7e1d9bbc619fba792387a9e3b71c280

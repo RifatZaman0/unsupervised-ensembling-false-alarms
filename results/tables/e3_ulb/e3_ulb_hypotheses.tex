@@ -1,0 +1,17 @@
+% commit 1c6ad9229d4c12d400707e3090d848fd71a02f17 (tables 83ddbda); source results/tables/e3_ulb/e3_ulb_hypotheses.csv
+\begin{table}[t]
+\centering
+\small
+\caption{ULB part of the frozen hypotheses: paired transaction-level bootstrap, 95\% percentile CI; 'fewer false alarms' only if the CI lies entirely below 0.}
+\label{tab:e3-ulb-hypotheses}
+\begin{tabular}{llll}
+\toprule
+Hypothesis & Comparison & dFP@K [95\% CI] & ULB result \\
+\midrule
+H1a & E-bench (= E-lit) vs median\_single & -0.8 [-2.7, 2.4] & no difference shown \\
+H1b & E-bench (= E-lit) vs default\_iforest & 2.4 [1.2, 5.8] & no difference shown \\
+H2b (primary) & E-bench vs E-lit & 0.0 (identity) & degenerate \\
+H2b (secondary) & E-bench-5\% vs E-lit (= E-bench) & 30.4 [21.6, 40.0] & no difference shown \\
+\bottomrule
+\end{tabular}
+\end{table}

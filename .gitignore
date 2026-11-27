@@ -9,4 +9,4 @@ data/raw/
 cache/
 
 # Kaggle API token must never be committed
-kaggle.json
+kaggle*.json

@@ -1,0 +1,68 @@
+{
+ "commit": "c1d33f1f31a4cbeb7edcede8c88d064122c9dd52",
+ "dirty": false,
+ "command": "python -m thesis.lof_diag l2",
+ "created_utc": "2026-11-16T22:35:32+00:00",
+ "labels_read": false,
+ "columns_read": [
+  "V1",
+  "V2",
+  "V3",
+  "V4",
+  "V5",
+  "V6",
+  "V7",
+  "V8",
+  "V9",
+  "V10",
+  "V11",
+  "V12",
+  "V13",
+  "V14",
+  "V15",
+  "V16",
+  "V17",
+  "V18",
+  "V19",
+  "V20",
+  "V21",
+  "V22",
+  "V23",
+  "V24",
+  "V25",
+  "V26",
+  "V27",
+  "V28",
+  "Amount",
+  "Time"
+ ],
+ "scaling": "z-score, fitted on the fit slice only",
+ "threshold_rule": "numpy.quantile(fit-slice scores, q), method 'linear'; alert if score > threshold",
+ "knn_lof_fit_sample": {
+  "max_rows": 30000,
+  "seed": 0
+ },
+ "note": "Descriptive and label-free; after freeze-v1, not part of the frozen evaluation. ULB is development data for the stress test.",
+ "runs": {
+  "L2a": "random 50% of day 1 -> other 50% of day 1",
+  "L2b": "day 1, first 12 h -> day 1, last 12 h",
+  "L2c": "day 2 -> day 1",
+  "L2d": "day 1 -> day 2 (E3, cached scores)"
+ },
+ "half_day_seconds": 43200,
+ "l2a_seed": 0,
+ "quantiles": [
+  0.998,
+  0.995
+ ],
+ "iforest_seeds": [
+  0,
+  1,
+  2,
+  3,
+  4
+ ],
+ "r": "alert rate on the scored slice / (1 - q); mean over IForest seeds, r_min and r_max over seeds",
+ "k": 20,
+ "runtime_s": 82.3
+}

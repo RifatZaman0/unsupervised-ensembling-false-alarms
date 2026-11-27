@@ -1,0 +1,7 @@
+hypothesis,estimate,ci_low,ci_high,comparison,verdict,status,rule,n_pairs,undefined_resamples,commit
+H4r,-0.08956294598907792,-0.09892675167806715,-0.06016385055177043,mean over 20 triples: train-percentile + median vs min-max + mean,supported,decided,the 95% day-block CI of dD_bar lies entirely below 0,,,4f3b58f392d05e785500c673bdc86ece81cfe182
+H4r-cost,0.031082098534843006,0.026164619881343075,0.036675037136150966,relative increase of the mean total FP@K over 20 triples,passes,decided,the upper bound of the 95% day-block CI of R is <= 0.05,,,4f3b58f392d05e785500c673bdc86ece81cfe182
+H4a,0.5445819696710199,0.25143225514831763,0.7250381689377832,,supported,decided,the 95% CI of rho lies entirely above 0,30.0,0.0,4f3b58f392d05e785500c673bdc86ece81cfe182
+H4b,3.2000000000007276,-0.8000000000010914,10.0,guarded:E-all vs static:E-all,not supported,decided,the 95% CI of dFP lies entirely below 0,,,4f3b58f392d05e785500c673bdc86ece81cfe182
+H4c,0.0,0.0,0.0,guarded:E-bench vs static:E-bench,no harm shown,decided,the 95% CI of dFP does not lie entirely above 0 (no harm shown; not a non-inferiority test with a margin),,,4f3b58f392d05e785500c673bdc86ece81cfe182
+H4d,-0.4285714285714286,,,"F_m vs mean log r_m,month",exploratory,"exploratory, developed after seeing ULB, appendix only: reported as an association, no decision",,,,4f3b58f392d05e785500c673bdc86ece81cfe182

@@ -1,0 +1,15 @@
+{
+ "commit": "1c6ad9229d4c12d400707e3090d848fd71a02f17",
+ "dirty": false,
+ "command": "python -m thesis.e3_ulb_figures",
+ "created_utc": "2026-10-30T21:42:20+00:00",
+ "tables_commit": "83ddbda7067442a2b689281c379eb832246dc0a0",
+ "source": "results/tables/e3_ulb/e3_ulb_deltas.csv, e3_ulb_threshold.csv",
+ "width_cm": 16.0,
+ "min_font_pt": 8,
+ "figures": [
+  "delta_primary_budget",
+  "threshold_check"
+ ],
+ "note": "Redrawn from the tables at the TDK text width; same numbers as the tables (nothing recomputed)."
+}

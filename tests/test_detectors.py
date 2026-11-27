@@ -1,4 +1,4 @@
-"""Rules for score() (Master Plan § Leakage rules): no labels, higher = more anomalous,
+"""Rules for score(): no labels, higher = more anomalous,
 ECOD and every other detector score new rows without batch effects, seeds are fixed.
 
 Where a rule could pass by accident, a second test shows the same check failing on a
@@ -86,7 +86,7 @@ def test_train_only_ecod_handles_constant_columns():
 
 @needs_adbench
 def test_ecod_batch_check_on_real_data():
-    """The Master Plan's 'ECOD batch check' on cardio: PyOD's ECOD changes scores, ours does not."""
+    """ECOD batch check on cardio: PyOD's ECOD changes scores, ours does not."""
     X, y = data.load_adbench("cardio")
     s = data.standardize(data.split_adbench("cardio", 0, X, y))
     assert batch_diff(ECOD().fit(s.X_train).decision_function, s.X_test, cut=300) > 0.1

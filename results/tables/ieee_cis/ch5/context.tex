@@ -1,0 +1,20 @@
+% commit 625bb29 (data 4f3b58f); source results/tables/ieee_cis/run/context_adtk.csv, context_score_drift.csv
+\begin{table}[t]
+\centering
+\small
+\caption{Context (exploratory, E5): days flagged by ADTK on the daily alert rate at the frozen q = 0.99 threshold, months 2--6. Score drift of E-bench (Evidently, per month and seed): 0 of 25 tests flagged.}
+\label{tab:context}
+\begin{tabular}{lrrrr}
+\toprule
+Series (q = 0.99) & Days & QuantileAD & LevelShiftAD & Either \\
+\midrule
+E-bench (min-max + mean) & 152 & 0 & 1 & 1 \\
+IForest & 152 & 0 & 0 & 0 \\
+PCA & 152 & 2 & 0 & 2 \\
+ECOD & 152 & 0 & 0 & 0 \\
+HBOS & 152 & 0 & 0 & 0 \\
+KNN & 152 & 3 & 0 & 3 \\
+LOF & 152 & 34 & 0 & 34 \\
+\bottomrule
+\end{tabular}
+\end{table}

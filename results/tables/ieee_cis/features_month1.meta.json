@@ -1,0 +1,21 @@
+{
+ "commit": "17525fcdf7e1d9bbc619fba792387a9e3b71c280",
+ "dirty": false,
+ "command": "python -m thesis.ieee_features",
+ "created_utc": "2026-11-16T22:42:19+00:00",
+ "labels_read": false,
+ "rows_read": "month 1 only (TransactionDT of all rows to find the end of month 1)",
+ "rows_month1": 134339,
+ "rows_file": 590540,
+ "days_month1": 30,
+ "transaction_dt_first": 86400,
+ "transaction_dt_last_month1": 2678390,
+ "n_candidates": 52,
+ "n_features": 26,
+ "matrix_shape_month1": [
+  134339,
+  26
+ ],
+ "constant_after_transform": [],
+ "runtime_s": 8.0
+}

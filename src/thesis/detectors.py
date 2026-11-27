@@ -1,4 +1,4 @@
-"""Detector pool and `score()` (Master Plan § Detectors, calibration and fusion).
+"""Detector pool and `score()`.
 
 `score(name, X_fit, X_score, seed)` fits one detector on X_fit (no labels) and returns
 (training scores, scores for X_score); higher = more anomalous for every detector.

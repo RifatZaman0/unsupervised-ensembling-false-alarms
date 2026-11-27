@@ -1,4 +1,4 @@
-"""Leakage and validity rules for loaders and splits (Master Plan § Leakage rules).
+"""Leakage and validity rules for loaders and splits.
 
 Each rule has a test on clean input and a test that breaks the rule on purpose, so the
 check is shown to fail when it should. Real-data tests skip when data/raw is not downloaded.

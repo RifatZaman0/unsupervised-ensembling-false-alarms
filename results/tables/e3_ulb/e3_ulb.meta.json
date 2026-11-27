@@ -1,0 +1,40 @@
+{
+ "commit": "83ddbda7067442a2b689281c379eb832246dc0a0",
+ "dirty": false,
+ "command": "python -m thesis.e3_ulb",
+ "created_utc": "2026-10-30T02:25:52+00:00",
+ "frozen_config": "identical to tag freeze-v1",
+ "cache_key": "21ba8c24b9",
+ "n_train": 144786,
+ "n_test": 140021,
+ "time_train_max": 86398.0,
+ "time_test_min": 86400.0,
+ "day2_frauds": 211,
+ "day2_fraud_rate": 0.0015069168196199141,
+ "budgets": [
+  0.001,
+  0.002,
+  0.005
+ ],
+ "k": [
+  141,
+  281,
+  701
+ ],
+ "quantiles": [
+  0.998,
+  0.995
+ ],
+ "resamples": 1000,
+ "bootstrap_seed": 0,
+ "detector_runtime_s": {
+  "IForest": 1.7372966999653727,
+  "PCA": 0.23904679995030165,
+  "ECOD": 4.422935700044036,
+  "HBOS": 2.6257384000346065,
+  "KNN": 6.466142300050706,
+  "LOF": 6.878103900002316
+ },
+ "runtime_s": 574.5,
+ "note": "Fitting stage (scaling, detectors, calibrators, thresholds) on day 1 with labels replaced by zeros; day-2 labels used only by the metrics. The oracle-best single is chosen with test labels (upper bound)."
+}

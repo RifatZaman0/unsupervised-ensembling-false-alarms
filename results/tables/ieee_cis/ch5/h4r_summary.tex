@@ -1,0 +1,18 @@
+% commit 625bb29 (data 4f3b58f); source results/tables/ieee_cis/run/rq4_hypotheses.csv, rq4_h4r_triples.csv, rq4_h4r_threshold.csv
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\caption{H4r in threshold mode (q = 0.98): D = mean over months 2--6 of $|\log r|$, r = monthly alert rate at the frozen month-1 threshold divided by its 2\% target (a month without an alert counts as 0.5 alert); dD = D(train-percentile + median) $-$ D(min-max + mean), paired. Robust = train-percentile + median; frozen = min-max + mean (freeze-v1 primary). The first row decides H4r; the named ensembles are descriptive.}
+\label{tab:h4r-summary}
+\begin{tabular}{lrrrl}
+\toprule
+Ensemble & D robust & D frozen & dD [95\% CI] & Role \\
+\midrule
+Mean of the 20 triples (H4r) & 0.334 & 0.423 & −0.090 [−0.099, −0.060] & supported \\
+E-bench & 0.378 & 0.413 & −0.036 [−0.049, −0.023] & descriptive \\
+E-bench-5\% & 0.209 & 0.457 & −0.247 [−0.323, −0.088] & descriptive \\
+E-all & 0.268 & 0.415 & −0.147 [−0.183, −0.045] & descriptive \\
+\bottomrule
+\end{tabular}
+\end{table}

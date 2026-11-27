@@ -1,0 +1,10 @@
+part,q,statistic,estimate,ci_low,ci_high,ci_entirely_below_0,ci_entirely_above_0,budget,fp_robust_mean,fp_frozen_mean,passes_margin,D_robust,D_frozen,commit
+H4r(i) threshold,0.999,mean over 20 triples of dD,-0.3766722349432553,-0.46696099988916534,-0.2532077237076889,True,False,,,,,,,15c8a577e31f1b8c986316d9faf172bc0bc7ad02
+H4r(i) threshold,0.998,mean over 20 triples of dD,-0.3881108285342748,-0.43187186383052484,-0.28662855992095443,True,False,,,,,,,15c8a577e31f1b8c986316d9faf172bc0bc7ad02
+H4r(i) threshold,0.995,mean over 20 triples of dD,-0.36583714265672074,-0.39899613619358154,-0.30907939637283266,True,False,,,,,,,15c8a577e31f1b8c986316d9faf172bc0bc7ad02
+H4r-cost budget,,"mean FP@K over 20 triples, robust / frozen - 1",-0.06034552493210854,,,,,0.001,108.41733333333332,115.38,,,,15c8a577e31f1b8c986316d9faf172bc0bc7ad02
+H4r-cost budget,,"mean FP@K over 20 triples, robust / frozen - 1",-0.03963599172451915,-0.13897959431149276,-0.0033102072269127663,True,False,0.002,234.9722619047619,244.67,True,,,15c8a577e31f1b8c986316d9faf172bc0bc7ad02
+H4r-cost budget,,"mean FP@K over 20 triples, robust / frozen - 1",-0.03280490719349938,,,,,0.005,607.0600000000001,627.65,,,,15c8a577e31f1b8c986316d9faf172bc0bc7ad02
+H4r(i) descriptive E-all (6 members),0.999,dD for E-all,0.07168176797125814,,,,,,,,,0.12312505110993352,0.05144328313867539,15c8a577e31f1b8c986316d9faf172bc0bc7ad02
+H4r(i) descriptive E-all (6 members),0.998,dD for E-all,0.006354270784606847,,,,,,,,,0.10948665278859061,0.10313238200398377,15c8a577e31f1b8c986316d9faf172bc0bc7ad02
+H4r(i) descriptive E-all (6 members),0.995,dD for E-all,-0.05175446843302332,,,,,,,,,0.021611503030387877,0.0733659714634112,15c8a577e31f1b8c986316d9faf172bc0bc7ad02

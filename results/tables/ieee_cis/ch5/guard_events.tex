@@ -1,0 +1,27 @@
+% commit 625bb29 (data 4f3b58f); source results/tables/ieee_cis/run/rq4_member_days.csv, rq4_guard_decisions.csv, rq4_daily_fp.csv
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\caption{The run-time guard on IEEE-CIS (budget 2\%, c = 3): the 3 test days on which it changed E-all, out of 152. r = alert rate of the member that day at its frozen month-1 threshold divided by the target; $\dagger$: r $>$ 3, member excluded that day. Fewer than two passing members: the static ensemble is used (fallback). IForest: mean of five seeds.}
+\label{tab:guard-events}
+\begin{tabular}{lrrr}
+\toprule
+ & Day 89 & Day 158 & Day 159 \\
+\midrule
+Rows that day & 3,353 & 2,845 & 2,878 \\
+Daily K & 68 & 57 & 58 \\
+r, IForest & 0.93 & 0.59 & 0.86 \\
+r, PCA & 1.07 & 0.79 & 0.96 \\
+r, ECOD & 4.92 † & 2.65 & 4.10 † \\
+r, HBOS & 4.15 † & 1.97 & 3.28 † \\
+r, KNN & 12.94 † & 5.69 † & 9.09 † \\
+r, LOF & 11.38 † & 5.83 † & 8.41 † \\
+Kept, E-all & IForest, PCA & IForest, PCA, ECOD, HBOS & IForest, PCA \\
+Kept, E-bench & IForest, PCA & IForest, PCA & IForest, PCA \\
+Kept, E-bench-5\% & static (fallback) & static (fallback) & static (fallback) \\
+FP@K, E-all: static / guarded & 67.6 / 68.0 & 49.4 / 49.0 & 47.0 / 50.2 \\
+FP@K, E-bench: static / guarded & 68.0 / 68.0 & 53.4 / 53.4 & 50.2 / 50.2 \\
+\bottomrule
+\end{tabular}
+\end{table}

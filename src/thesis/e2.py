@@ -1,5 +1,5 @@
 """E2, complementarity on the 15 ADBench sets: every pair and triple of the six detectors under
-the six fusion configs, from the cached E1 scores (Master Plan § Experiments, E2).
+the six fusion configs, from the cached E1 scores.
 
     python -m thesis.e2                    # 15 datasets x 5 seeds x 35 combos x 6 configs x 2 budgets
     python -m thesis.e2 cardio             # a subset, for a quick check (no results written)

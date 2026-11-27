@@ -1,0 +1,78 @@
+{
+ "commit": "ef2d2855935d624e330e04ba1a04c2e1b693e4a7",
+ "dirty": false,
+ "cache_key": "21ba8c24b9",
+ "protocol": {
+  "zscore_inputs": true,
+  "k_rule": "ceil",
+  "pca_drop_zero_variance": true,
+  "adbench_dedup": false
+ },
+ "created_utc": "2026-10-28T01:26:05+00:00",
+ "source": "e1_per_dataset.csv (seed means per dataset; same data as e1_summary)",
+ "test": "Friedman (scipy.stats.friedmanchisquare) + Nemenyi CD, Demsar 2006",
+ "results": [
+  {
+   "metric": "fp_at_k",
+   "budget": 0.02,
+   "n_datasets": 15,
+   "k_detectors": 6,
+   "alpha": 0.05,
+   "friedman_chi2": 2.5390625000000058,
+   "friedman_p": 0.7706010330505411,
+   "iman_davenport_F": 0.4905660377358501,
+   "iman_davenport_p": 0.7822179690822787,
+   "cd": 1.9467194088154625,
+   "avg_ranks": {
+    "IForest": 3.066666666666667,
+    "ECOD": 3.1666666666666665,
+    "KNN": 3.5,
+    "PCA": 3.533333333333333,
+    "LOF": 3.8,
+    "HBOS": 3.933333333333333
+   },
+   "groups": [
+    [
+     "IForest",
+     "ECOD",
+     "KNN",
+     "PCA",
+     "LOF",
+     "HBOS"
+    ]
+   ],
+   "figure": "cd_fp_at_k_2pct"
+  },
+  {
+   "metric": "fp_at_k",
+   "budget": 0.05,
+   "n_datasets": 15,
+   "k_detectors": 6,
+   "alpha": 0.05,
+   "friedman_chi2": 4.951456310679645,
+   "friedman_p": 0.4218332436380877,
+   "iman_davenport_F": 0.9896049896049968,
+   "iman_davenport_p": 0.43044972031638107,
+   "cd": 1.9467194088154625,
+   "avg_ranks": {
+    "IForest": 2.7,
+    "KNN": 3.2666666666666666,
+    "ECOD": 3.4,
+    "LOF": 3.8666666666666667,
+    "PCA": 3.8666666666666667,
+    "HBOS": 3.9
+   },
+   "groups": [
+    [
+     "IForest",
+     "KNN",
+     "ECOD",
+     "LOF",
+     "PCA",
+     "HBOS"
+    ]
+   ],
+   "figure": "cd_fp_at_k_5pct"
+  }
+ ]
+}

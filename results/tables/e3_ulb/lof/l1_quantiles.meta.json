@@ -1,0 +1,59 @@
+{
+ "commit": "7475821a1b93528dc2fc5bf1675a699ca56ec23f",
+ "dirty": false,
+ "command": "python -m thesis.lof_diag l1",
+ "created_utc": "2026-11-16T22:35:36+00:00",
+ "labels_read": false,
+ "columns_read": [
+  "V1",
+  "V2",
+  "V3",
+  "V4",
+  "V5",
+  "V6",
+  "V7",
+  "V8",
+  "V9",
+  "V10",
+  "V11",
+  "V12",
+  "V13",
+  "V14",
+  "V15",
+  "V16",
+  "V17",
+  "V18",
+  "V19",
+  "V20",
+  "V21",
+  "V22",
+  "V23",
+  "V24",
+  "V25",
+  "V26",
+  "V27",
+  "V28",
+  "Amount",
+  "Time"
+ ],
+ "scaling": "z-score, fitted on the fit slice only",
+ "threshold_rule": "numpy.quantile(fit-slice scores, q), method 'linear'; alert if score > threshold",
+ "knn_lof_fit_sample": {
+  "max_rows": 30000,
+  "seed": 0
+ },
+ "note": "Descriptive and label-free; after freeze-v1, not part of the frozen evaluation. ULB is development data for the stress test.",
+ "figure": {
+  "width_cm": 16.0,
+  "height_cm": 7.8,
+  "min_font_pt": 8,
+  "bins": 120,
+  "x_axis_starts_at_pooled_quantile": 0.001,
+  "files": [
+   "results/figures/e3_ulb/lof/l1_hist.pdf",
+   "results/figures/e3_ulb/lof/l1_hist.png"
+  ]
+ },
+ "scores": "cached E3 scores, day 1 fit and day 2",
+ "runtime_s": 3.4
+}

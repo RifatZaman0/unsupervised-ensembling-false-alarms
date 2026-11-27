@@ -1,0 +1,22 @@
+{
+ "commit": "8b25943a3f5a3eed83a3f7252f8063cd10d7fe4f",
+ "dirty": false,
+ "command": "python -m thesis.zero_variance",
+ "created_utc": "2026-10-29T17:17:09+00:00",
+ "cache_key": "21ba8c24b9",
+ "counts": {
+  "ADBench": {
+   "members": 450,
+   "zero_variance": 0,
+   "min_std": 0.027325166367746272,
+   "min_std_member": "Waveform 1 IForest"
+  },
+  "ULB day 1": {
+   "members": 10,
+   "zero_variance": 0,
+   "min_std": 0.04507078070643412,
+   "min_std_member": "ULB 1 IForest"
+  }
+ },
+ "note": "Training scores only. ULB: day-1 features (Class column never read), z-scored with day-1 statistics; no day-2 row scored. zero_variance = training scores constant (range exactly 0), the case fusion maps to 0 under z-score calibration"
+}

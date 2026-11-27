@@ -1,0 +1,108 @@
+{
+ "commit": "98d9db253eb27facf66a79856b3a7f740cc67e00",
+ "dirty": false,
+ "command": "python -m thesis.e_stress",
+ "created_utc": "2026-11-16T23:58:47+00:00",
+ "labels_read": "day-2 labels for FP@K and threshold-mode metrics only; member decisions are label-free",
+ "rule_q": 0.998,
+ "c_values": [
+  2,
+  3,
+  5
+ ],
+ "sides": [
+  "one-sided",
+  "two-sided"
+ ],
+ "bases": [
+  "absolute",
+  "relative"
+ ],
+ "fallback": "static ensemble if no member passes",
+ "fusion": "minmax+mean",
+ "budgets": [
+  0.001,
+  0.002,
+  0.005
+ ],
+ "quantiles": [
+  0.998,
+  0.995
+ ],
+ "resamples": 1000,
+ "bootstrap_seed": 0,
+ "bootstrap": "transaction-level: day-2 rows resampled with replacement, same size",
+ "member_sets": [
+  "IForest",
+  "PCA",
+  "ECOD",
+  "HBOS",
+  "KNN",
+  "LOF",
+  "{IForest}",
+  "{KNN}",
+  "{IForest+KNN}",
+  "{IForest+LOF}",
+  "{IForest+PCA}",
+  "{PCA+KNN}",
+  "{IForest+KNN+LOF}",
+  "{IForest+PCA+KNN}",
+  "{IForest+PCA+ECOD+HBOS}",
+  "{PCA+ECOD+HBOS+KNN}",
+  "{IForest+PCA+ECOD+HBOS+KNN}",
+  "{IForest+PCA+ECOD+HBOS+LOF}",
+  "{IForest+PCA+ECOD+HBOS+KNN+LOF}"
+ ],
+ "comparisons": [
+  [
+   "{IForest+PCA}",
+   "{IForest+PCA+KNN}"
+  ],
+  [
+   "{IForest+LOF}",
+   "{IForest+KNN+LOF}"
+  ],
+  [
+   "{IForest+PCA+ECOD+HBOS+LOF}",
+   "{IForest+PCA+ECOD+HBOS+KNN+LOF}"
+  ],
+  [
+   "{KNN}",
+   "{IForest+PCA+KNN}"
+  ],
+  [
+   "{KNN}",
+   "{IForest+KNN+LOF}"
+  ],
+  [
+   "{KNN}",
+   "{IForest+PCA+ECOD+HBOS+KNN+LOF}"
+  ],
+  [
+   "{PCA+KNN}",
+   "{IForest+PCA+KNN}"
+  ],
+  [
+   "{PCA+ECOD+HBOS+KNN}",
+   "{IForest+PCA+ECOD+HBOS+KNN+LOF}"
+  ],
+  [
+   "{IForest}",
+   "{IForest+KNN+LOF}"
+  ],
+  [
+   "{IForest+PCA+ECOD+HBOS}",
+   "{IForest+PCA+ECOD+HBOS+KNN+LOF}"
+  ],
+  [
+   "{IForest+KNN}",
+   "{IForest+KNN+LOF}"
+  ],
+  [
+   "{IForest+PCA+ECOD+HBOS+KNN}",
+   "{IForest+PCA+ECOD+HBOS+KNN+LOF}"
+  ]
+ ],
+ "note": "ULB is development data for the stress test. No rule is chosen here.",
+ "runtime_s": 332.0
+}

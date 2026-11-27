@@ -1,0 +1,21 @@
+% commit bd2ad04 (data c1d33f1); source results/tables/e3_ulb/lof/l2_controls.csv
+\begin{table}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{Within-day and swapped controls on ULB: r = alert rate on the scored slice divided by its target, at the fit-slice threshold for q = 0.998 (q = 0.995 in brackets). L2a: random halves of day 1; L2b: day 1, 0--12 h to 12--24 h; L2c: day 2 to day 1; L2d: day 1 to day 2, as in E3. IForest: mean of five seeds. Label-free; development data.}
+\label{tab:lof-l2}
+\begin{tabular}{lrrrr}
+\toprule
+Member & L2a & L2b & L2c & L2d (E3) \\
+\midrule
+IForest & 0.94 (1.01) & 0.18 (0.51) & 1.14 (1.02) & 0.90 (1.03) \\
+PCA & 1.12 (0.97) & 0.30 (0.60) & 1.15 (1.05) & 0.89 (0.97) \\
+ECOD & 1.05 (1.01) & 0.28 (0.50) & 1.27 (1.06) & 0.88 (1.11) \\
+HBOS & 0.91 (1.01) & 0.23 (0.43) & 1.29 (1.19) & 0.82 (1.09) \\
+KNN & 0.94 (0.98) & 1.01 (1.12) & 1.06 (1.07) & 1.25 (1.32) \\
+LOF & 0.98 (0.94) & 0.12 (0.37) & 23.97 (18.41) & 41.10 (34.07) \\
+20th-NN distance ratio & 1.00 & 0.98 & 1.29 & 1.44 \\
+\bottomrule
+\end{tabular}
+\end{table}

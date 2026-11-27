@@ -137,7 +137,7 @@ def test_ebench_follows_the_rule(cfg):
     lambda c: c["statistics"]["bootstrap"].update(resamples=0),
     lambda c: c["hypotheses"]["H1a"].update(ensemble="E-all"),
     lambda c: c.pop("hypotheses"),
-    # one break per check (re-review 2026-10-29, H9)
+    # one break per check
     lambda c: c["ensembles"].update({"E-x": {"members": ["IForest", "PCA", "KNN"],
                                              "role": "alias", "alias_of": "E-lit"}}),
     lambda c: c["ensembles"]["E-lit"].update(alias_of="E-unknown"),
@@ -150,7 +150,7 @@ def test_ebench_follows_the_rule(cfg):
     lambda c: c["hypotheses"]["H3a"].update(ensemble="E-all"),
     lambda c: c["statistics"]["bootstrap"].update(resamples=1000.0),
     lambda c: c["ensembles"]["E-bench"].update(role="secondary"),
-    # checks added with H1-H4 and the H3b / E5 decisions (2026-10-30)
+    # checks for H1-H4, H3b and E5
     lambda c: c.pop("context"),
     lambda c: c["hypotheses"].pop("H3b"),
     lambda c: c["hypotheses"]["H3b"].update(status="confirmatory"),

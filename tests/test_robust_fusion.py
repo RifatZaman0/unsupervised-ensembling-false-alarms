@@ -8,6 +8,8 @@ import pytest
 from thesis import frozen, fusion, lof_diag, data, robust_fusion as rf
 from thesis.paths import TABLES
 
+needs_ulb = pytest.mark.skipif(not data.ULB_CSV.exists(), reason="ULB not downloaded")
+
 
 def test_median_is_an_extra_option_and_the_frozen_configs_are_unchanged():
     assert fusion.FUSION_CONFIGS == (("minmax", "mean"), ("minmax", "max"), ("zscore", "mean"),
@@ -30,6 +32,7 @@ def ulb():
     return rf.ulb_inputs(cfg), cfg
 
 
+@needs_ulb
 def test_frozen_primary_outputs_are_unchanged(ulb):
     """The frozen min-max + mean rows of E3 (budget and threshold mode) rebuild exactly."""
     (base, y), cfg = ulb
@@ -50,6 +53,7 @@ def test_frozen_primary_outputs_are_unchanged(ulb):
             assert bt.loc[(s, r.budget), "fp_at_k"] == pytest.approx(r.fp_at_k, abs=1e-9)
 
 
+@needs_ulb
 def test_rebuilt_tables_match_the_readme(ulb):
     (base, y), cfg = ulb
     meth = rf.methods(base.train, base.test, list(base.singles), rf.distinct_ensembles(cfg))
@@ -104,6 +108,7 @@ def test_bound_check_refuses_too_many_broken_members():
         rf.bound_check(tr, te, ["A", "B", "C", "D"], ["B", "C"], 0.99)
 
 
+@needs_ulb
 def test_bound_on_ulb_day_2_label_free():
     """The proposition on real development data, without any label: LOF treated as broken."""
     X, t = data.load_ulb_unlabelled()

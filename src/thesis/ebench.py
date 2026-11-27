@@ -2,7 +2,7 @@
 
     python -m thesis.ebench      (after python -m thesis.e2)
 
-Rule (supervisor, 2026-10-29): among the 20 triples, the lowest average FP@K rank over the 15
+Rule: among the 20 triples, the lowest average FP@K rank over the 15
 ADBench sets under the primary fusion config (min-max + mean) at the primary 2% budget. FP@K
 uses test labels, so this is a label-based choice on ADBench only; fraud data never enters it.
 The same rule at 5% names the secondary ensemble E-bench-5%. Writes results/tables/e2/ebench.md

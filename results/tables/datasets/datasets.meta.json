@@ -1,0 +1,12 @@
+{
+ "commit": "b12667f5989f7b6145a3fe126ff0e08d0f4d07e3",
+ "dirty": false,
+ "command": "python -m thesis.export_datasets",
+ "created_utc": "2026-10-28T01:36:42+00:00",
+ "files": [
+  "adbench_catalogue.csv",
+  "datasets.csv",
+  "duplicates.csv"
+ ],
+ "note": "n_train/n_test for ADBench are for seed 0; all seeds have the same sizes. duplicates.csv: exact (features, label) duplicates in the distributed ADBench files, which the main experiment keeps; rows_removed is what --dedup drops"
+}

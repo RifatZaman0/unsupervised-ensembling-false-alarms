@@ -1,7 +1,6 @@
-"""Protocol switches that are provisionally accepted (DECISIONS.md 2026-10-25) and still await the
-supervisor's confirmation.
+"""Protocol switches for the preprocessing and metric choices of the evaluation protocol.
 
-The defaults are the provisional choices. `python -m thesis.e1` takes a command-line flag for
+The defaults are the protocol used for every reported result. `python -m thesis.e1` takes a command-line flag for
 each one (see `add_arguments`), so a different choice is one rerun. If a choice is changed for
 good, change its default here; with the defaults, the score cache key stays what it was before
 these switches existed (21ba8c24b9), so no rescoring is needed.
@@ -22,7 +21,7 @@ from dataclasses import dataclass, fields
 K_RULES = ("ceil", "round", "floor")
 
 # Fixed (not switches). KNN / LOF are fitted on a sample of at most this many training rows
-# (Master Plan § Detectors: 30,000-row sample on fraud data). The sample is drawn with the
+# (30,000-row sample on fraud data). The sample is drawn with the
 # split seed, or with KNN_LOF_SAMPLE_SEED when the split has none (ULB, IEEE-CIS). ADBench
 # training splits are all smaller (largest: 29,720 rows), so the sample never applies there.
 KNN_LOF_MAX_FIT_ROWS = 30_000

@@ -4,15 +4,15 @@ min-max + mean, on development data only.
     python -m thesis.robust_fusion          # writes results/tables/robust_fusion/
     python -m thesis.robust_fusion --quick  # ULB tables only, prints, writes nothing
 
-Three tables, rebuilt with the thesis code from the score cache (the development check in
-docs/notes/robust_fusion_check_2026-11-17 did the same with stand-alone scripts):
+Three tables, rebuilt with the thesis code from the score cache (an earlier development check
+computed the same values with stand-alone scripts):
 1. ULB budget mode: FP@K on day 2 at 0.1/0.2/0.5%, seed mean, singles and every ensemble under
    {min-max, train-percentile} x {mean, median};
 2. ULB threshold mode: alert rate, FP and TP on day 2 at the frozen day-1 threshold
    (numpy.quantile of the fused day-1 training scores, q = 0.999 / 0.998 / 0.995);
 3. ADBench static check: 15 sets x 5 seeds x 20 triples, the same four configurations, 2% and 5%.
-Plus the label-free bound check of the proposition (docs/writing/notes/robust_fusion_proposition.md)
-on ULB day 2.
+Plus the label-free bound check of the robust-fusion proposition (at least ceil(m/2) calibrated
+member scores exceed the threshold whenever the fused score does) on ULB day 2.
 
 Labels: ULB day-2 and ADBench test labels for FP@K / FP / TP only. Calibrators and thresholds come
 from training scores only. The six freeze-v1 fusion configurations are not changed: median is an

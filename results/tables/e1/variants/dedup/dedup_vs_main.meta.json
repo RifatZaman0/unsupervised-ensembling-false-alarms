@@ -1,0 +1,77 @@
+{
+ "commit": "f9374615a80e5a5b280e85850cc1e7329af2e649",
+ "dirty": false,
+ "command": "python -m thesis.e1_dedup",
+ "created_utc": "2026-10-28T02:20:30+00:00",
+ "commit_main": "ef2d2855935d624e330e04ba1a04c2e1b693e4a7",
+ "commit_dedup": "b12667f5989f7b6145a3fe126ff0e08d0f4d07e3",
+ "cache_key_main": "21ba8c24b9",
+ "cache_key_dedup": "2ef4e6d580",
+ "summaries": [
+  {
+   "budget": 0.02,
+   "kendall_tau_avg_rank_fp_at_k": 0.7333333333333333,
+   "top_main": "IForest",
+   "top_dedup": "IForest",
+   "friedman_p_main": 0.7706010330505411,
+   "friedman_p_dedup": 0.8453187266480667,
+   "groups_dedup": [
+    [
+     "IForest",
+     "ECOD",
+     "PCA",
+     "KNN",
+     "HBOS",
+     "LOF"
+    ]
+   ],
+   "max_abs_delta_avg_rank": 0.1333333333333333,
+   "datasets_changed_by_dedup": [
+    "annthyroid",
+    "cardio",
+    "letter",
+    "mammography",
+    "optdigits",
+    "satimage-2",
+    "thyroid",
+    "vowels"
+   ],
+   "datasets_best_changed": [
+    "annthyroid",
+    "thyroid"
+   ],
+   "unchanged_datasets_identical": true
+  },
+  {
+   "budget": 0.05,
+   "kendall_tau_avg_rank_fp_at_k": 0.9660917830792959,
+   "top_main": "IForest",
+   "top_dedup": "IForest",
+   "friedman_p_main": 0.4218332436380877,
+   "friedman_p_dedup": 0.47159714920841467,
+   "groups_dedup": [
+    [
+     "IForest",
+     "KNN",
+     "ECOD",
+     "PCA",
+     "LOF",
+     "HBOS"
+    ]
+   ],
+   "max_abs_delta_avg_rank": 0.1333333333333333,
+   "datasets_changed_by_dedup": [
+    "annthyroid",
+    "cardio",
+    "letter",
+    "mammography",
+    "optdigits",
+    "satimage-2",
+    "thyroid",
+    "vowels"
+   ],
+   "datasets_best_changed": [],
+   "unchanged_datasets_identical": true
+  }
+ ]
+}

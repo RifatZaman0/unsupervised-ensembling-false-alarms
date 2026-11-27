@@ -295,7 +295,7 @@ def test_only_hypothesis_rows_get_a_verdict(cfg):
     assert len(below) > 0 and (below.verdict == e3_ulb.DESCRIPTIVE).all()
 
 
-# ---------------------------------------------------------------- N2 (review): seed pairing, paired budgets
+# ---------------------------------------------------------------- seed pairing, paired budgets
 
 def test_ensemble_seed_i_uses_iforest_seed_i(cfg):
     split = toy_split()

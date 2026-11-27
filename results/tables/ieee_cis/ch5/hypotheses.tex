@@ -1,0 +1,25 @@
+% commit 625bb29 (data 4f3b58f); source results/tables/ieee_cis/run/rq4_hypotheses.csv, v1_hypotheses.csv, h3a.csv, e3_deltas.csv, rq4_h4r_triples.csv, rq4_member_days.csv, rq4_guard_decisions.csv, rq4_daily_fp.csv, rq4_pre_deployment_r.csv, run.meta.json
+\begin{table}[t]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\caption{IEEE-CIS, the single run (months 2--6, budget 2\%): every hypothesis with its frozen criterion (freeze-v1, freeze-v3). 95\% CIs from 1000 month-stratified day-block resamples. FP = false positives; daily K = $\lceil 0.02\, n_d \rceil$ per test day, monthly K per month. H1a and H1b combine both fraud datasets; the ULB verdict is in the last column.}
+\label{tab:ieee-hypotheses}
+\begin{tabular}{>{\raggedright\arraybackslash}p{1.25cm}>{\raggedright\arraybackslash}p{2.75cm}>{\raggedright\arraybackslash}p{2.3cm}>{\raggedright\arraybackslash}p{2.0cm}>{\raggedright\arraybackslash}p{1.45cm}>{\raggedright\arraybackslash}p{4.6cm}}
+\toprule
+Hypothesis & Comparison & Estimate [95\% CI] & Criterion & Verdict & In plain units \\
+\midrule
+H4r & train-percentile + median vs min-max + mean, 20 triples, threshold mode, q = 0.98 & −0.0896 [−0.0989, −0.0602] & CI entirely below 0 & supported & Typical monthly miss of the alert target ×1.53 → ×1.40; better in 18 of 20 ensembles \\
+H4r-cost & relative change of mean total FP@K, 20 triples, daily K & +3.11\% [+2.62\%, +3.67\%] & upper CI bound ≤ +5\% & passes & +256 FP over 152 days (+1.7 per day at about 61 alerts per day) \\
+H4a & Spearman ρ, pre-deployment vs monthly |log r|, 30 pairs & 0.545 [0.251, 0.725] & CI entirely above 0 & supported & Carried by members below target in the check (HBOS r = 0.19, IForest r = 0.20). KNN and LOF, excluded by the guard on all 3 event days, had the smallest check deviation (r = 0.61, 1.19); ECOD and HBOS, excluded on fewer days, were below target in the check (r = 0.23, 0.19) \\
+H4b & E-guard(E-all) vs static E-all, daily K & +3.2 [−0.8, +10.0] & CI entirely below 0 & not supported & The guard changed E-all on 3 of 152 days; +0.02 FP per day \\
+H4c & E-guard(E-bench) vs static E-bench, daily K & 0.0 [0.0, 0.0] & CI not entirely above 0 & no harm shown & KNN dropped on 3 days (89, 158, 159); FP@K unchanged on each, so dFP = 0 (a result, not 0 by identity) \\
+H1a & E-bench vs median single, monthly K & +25.9 [−13.6, +68.3] & CI entirely below 0 on both ULB and IEEE-CIS & not supported & +0.28 FP per 100 alerts; ULB: no difference shown \\
+H1b & E-bench vs default IForest, monthly K & +224.4 [+183.6, +274.0] & CI entirely below 0 on at least one dataset & not supported & The ensemble is worse than default IForest: +2.5 FP per 100 alerts, CI entirely above 0; ULB: no difference shown \\
+H2b (secondary) & E-bench-5\% vs E-bench, monthly K & −347.0 [−420.4, −284.0] & none (descriptive) & descriptive & −3.8 FP per 100 alerts \\
+H3a & E-bench vs median single, |monthly alert rate − 1\%|, q = 0.99 & +0.00096 [+0.00072, +0.00114] & CI entirely below 0 & not supported & Monthly alert rate misses the 1\% target by 0.91 percentage points (E-bench) vs 0.82 (median single) \\
+H3b & Spearman ρ, weekly drift share vs FPR, 21 weeks & −0.037 [−0.506, 0.405] & none (exploratory) & exploratory & Association only, no decision \\
+H4d & Spearman ρ, fragility index vs mean log r, 6 members & −0.429 (no CI) & none (exploratory) & exploratory & Association only, no decision; appendix \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,0 +1,48 @@
+{
+ "commit": "15c8a577e31f1b8c986316d9faf172bc0bc7ad02",
+ "dirty": false,
+ "command": "python -m thesis.robust_fusion --triples",
+ "created_utc": "2026-11-17T04:32:35+00:00",
+ "label": "developed on ULB; descriptive development check, the design is not changed on it",
+ "triples": [
+  "IForest+PCA+ECOD",
+  "IForest+PCA+HBOS",
+  "IForest+PCA+KNN",
+  "IForest+PCA+LOF",
+  "IForest+ECOD+HBOS",
+  "IForest+ECOD+KNN",
+  "IForest+ECOD+LOF",
+  "IForest+HBOS+KNN",
+  "IForest+HBOS+LOF",
+  "IForest+KNN+LOF",
+  "PCA+ECOD+HBOS",
+  "PCA+ECOD+KNN",
+  "PCA+ECOD+LOF",
+  "PCA+HBOS+KNN",
+  "PCA+HBOS+LOF",
+  "PCA+KNN+LOF",
+  "ECOD+HBOS+KNN",
+  "ECOD+HBOS+LOF",
+  "ECOD+KNN+LOF",
+  "HBOS+KNN+LOF"
+ ],
+ "robust": "percentile+median",
+ "frozen": "minmax+mean",
+ "quantiles": [
+  0.999,
+  0.998,
+  0.995
+ ],
+ "budgets": [
+  0.001,
+  0.002,
+  0.005
+ ],
+ "cost_ci_budget": 0.002,
+ "cost_margin": 0.05,
+ "zero_alert_window": 0.5,
+ "resampling": "the 24 hours of day 2 drawn with replacement (block analogue of the day-block bootstrap; day 2 is one window); numpy default_rng(seed 0)",
+ "resamples": 1000,
+ "labels_read": "day-2 labels for the cost part only; the threshold part is label-free",
+ "runtime_s": 97.9
+}

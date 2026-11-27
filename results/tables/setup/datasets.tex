@@ -1,0 +1,30 @@
+% commit 1c6ad92; source datasets (thesis.export_setup)
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\caption{Datasets: 15 ADBench sets (files as distributed, duplicates kept) and ULB credit-card fraud. ADBench: stratified 60/40 split, 5 seeds (sizes for seed 0, equal for all seeds); ULB: day 1 for fitting, day 2 for testing.}
+\label{tab:setup-datasets}
+\begin{tabular}{lrrrlrr}
+\toprule
+dataset & n & d & anomalies (\%) & split & train & test \\
+\midrule
+ALOI & 49534 & 27 & 3.04 & stratified 60/40, 5 seeds & 29720 & 19814 \\
+annthyroid & 7200 & 6 & 7.42 & stratified 60/40, 5 seeds & 4320 & 2880 \\
+cardio & 1831 & 21 & 9.61 & stratified 60/40, 5 seeds & 1098 & 733 \\
+letter & 1600 & 32 & 6.25 & stratified 60/40, 5 seeds & 960 & 640 \\
+mammography & 11183 & 6 & 2.32 & stratified 60/40, 5 seeds & 6709 & 4474 \\
+mnist & 7603 & 100 & 9.21 & stratified 60/40, 5 seeds & 4561 & 3042 \\
+optdigits & 5216 & 64 & 2.88 & stratified 60/40, 5 seeds & 3129 & 2087 \\
+PageBlocks & 5393 & 10 & 9.46 & stratified 60/40, 5 seeds & 3235 & 2158 \\
+pendigits & 6870 & 16 & 2.27 & stratified 60/40, 5 seeds & 4122 & 2748 \\
+satimage-2 & 5803 & 36 & 1.22 & stratified 60/40, 5 seeds & 3481 & 2322 \\
+shuttle & 49097 & 9 & 7.15 & stratified 60/40, 5 seeds & 29458 & 19639 \\
+thyroid & 3772 & 6 & 2.47 & stratified 60/40, 5 seeds & 2263 & 1509 \\
+vowels & 1456 & 12 & 3.43 & stratified 60/40, 5 seeds & 873 & 583 \\
+Waveform & 3443 & 21 & 2.9 & stratified 60/40, 5 seeds & 2065 & 1378 \\
+Wilt & 4819 & 5 & 5.33 & stratified 60/40, 5 seeds & 2891 & 1928 \\
+ULB & 284807 & 29 & 0.17 & day 1 (Time < 86400 s) / day 2 & 144786 & 140021 \\
+\bottomrule
+\end{tabular}
+\end{table}

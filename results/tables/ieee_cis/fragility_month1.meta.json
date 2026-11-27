@@ -1,0 +1,26 @@
+{
+ "commit": "e3f94827baaefbfaddf425c4951d7170e51f7c7a",
+ "dirty": false,
+ "command": "python -m thesis.fragility",
+ "created_utc": "2026-11-17T02:12:02+00:00",
+ "definition": "F = share of training scores > t - DELTA (t - median), / (1 - q); t = numpy.quantile(training scores, q, 'linear'); IForest: mean of the five seeds",
+ "delta": 0.1,
+ "delta_note": "fixed once before any value was computed; not tuned",
+ "labels_read": false,
+ "note": "Exploratory (developed after seeing ULB). No exclusion rule uses F.",
+ "quantiles": [
+  0.995,
+  0.99,
+  0.98
+ ],
+ "rows": "month 1 only (ieee_features.load_month1)",
+ "features": "freeze-v2 list; medians, frequency maps and z-score fitted on month 1",
+ "month1": {
+  "rows_month1": 134339,
+  "rows_file": 590540,
+  "days_month1": 30,
+  "transaction_dt_first": 86400,
+  "transaction_dt_last_month1": 2678390
+ },
+ "runtime_s": 35.6
+}

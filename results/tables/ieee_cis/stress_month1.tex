@@ -1,0 +1,19 @@
+% commit bd2ad04 (data 1d1c7f4); source results/tables/ieee_cis/stress_month1.csv
+\begin{table}[t]
+\centering
+\small
+\caption{IEEE-CIS month 1, label-free stress test: fit on days 0--20, score days 21--29. r = alert rate / (1 - q) at the fit-window threshold, absolute and relative to the median member. IForest: mean of five seeds.}
+\label{tab:ieee-stress-month1}
+\begin{tabular}{lrrrr}
+\toprule
+Member & r, q = 0.99 & r / median, q = 0.99 & r, q = 0.98 & r / median, q = 0.98 \\
+\midrule
+IForest & 0.002 & 0.05 & 0.202 & 0.71 \\
+PCA & 0.063 & 1.64 & 0.339 & 1.19 \\
+ECOD & 0.014 & 0.36 & 0.229 & 0.81 \\
+HBOS & 0.002 & 0.06 & 0.189 & 0.67 \\
+KNN & 0.613 & 15.82 & 0.607 & 2.14 \\
+LOF & 1.271 & 32.79 & 1.188 & 4.18 \\
+\bottomrule
+\end{tabular}
+\end{table}

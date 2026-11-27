@@ -1,0 +1,22 @@
+% commit 1c6ad92; source duplicates.csv in tables/datasets @ b12667f (thesis.export_setup)
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\caption{Exact duplicates (features and label) in the distributed ADBench files, for the 8 sets that contain any; the other 7 (ALOI, mnist, PageBlocks, pendigits, shuttle, Waveform, Wilt) contain none. Removed: what the duplicate robustness check drops (the first occurrence of every (features, label) row is kept; rows with equal features but different labels are all kept). In groups: rows whose (features, label) occurs more than once. Rate: anomaly rate as distributed and after removal.}
+\label{tab:setup-duplicates}
+\begin{tabular}{lrrrrrr}
+\toprule
+dataset & rows & in groups & removed & of them anomalies & rate (\%) & rate after (\%) \\
+\midrule
+annthyroid & 7,200 & 200 (2.8\%) & 138 & 0 & 7.42 & 7.56 \\
+cardio & 1,831 & 16 (0.9\%) & 9 & 1 & 9.61 & 9.60 \\
+letter & 1,600 & 4 (0.2\%) & 2 & 0 & 6.25 & 6.26 \\
+mammography & 11,183 & 3,338 (29.8\%) & 3,334 & 6 & 2.32 & 3.24 \\
+optdigits & 5,216 & 34 (0.7\%) & 18 & 18 & 2.88 & 2.54 \\
+satimage-2 & 5,803 & 4 (0.1\%) & 2 & 2 & 1.22 & 1.19 \\
+thyroid & 3,772 & 163 (4.3\%) & 116 & 0 & 2.47 & 2.54 \\
+vowels & 1,456 & 8 (0.5\%) & 4 & 4 & 3.43 & 3.17 \\
+\bottomrule
+\end{tabular}
+\end{table}

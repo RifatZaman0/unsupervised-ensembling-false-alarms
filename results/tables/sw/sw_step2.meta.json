@@ -1,0 +1,108 @@
+{
+ "commit": "62f20da0396b1a3ba83f9808fed096105d3b21cb",
+ "dirty": false,
+ "command": "python -m thesis.sw step2",
+ "created_utc": "2026-11-20T14:03:46+00:00",
+ "prereg": "prereg_sw.md",
+ "prereg_tag": "prereg-sw",
+ "prereg_tag_commit": "9f92a42f91785add388d1ba606b74dedc72ece80",
+ "prereg_unchanged_since_tag": true,
+ "step": "Step 2: main test on ADBench (prereg_sw.md Section 6)",
+ "cache_key": "21ba8c24b9",
+ "protocol": {
+  "zscore_inputs": true,
+  "k_rule": "ceil",
+  "pca_drop_zero_variance": true,
+  "adbench_dedup": false
+ },
+ "preprocessing": "zscore-train",
+ "detector_params": {
+  "IForest": {
+   "n_estimators": 100,
+   "max_samples": "auto"
+  },
+  "PCA": {
+   "standardization": true,
+   "min_variance_ratio": 1e-10
+  },
+  "ECOD": {},
+  "HBOS": {
+   "n_bins": 10,
+   "alpha": 0.1,
+   "tol": 0.5
+  },
+  "KNN": {
+   "n_neighbors": 5,
+   "method": "largest"
+  },
+  "LOF": {
+   "n_neighbors": 20,
+   "novelty": true
+  }
+ },
+ "budgets": [
+  0.02,
+  0.05
+ ],
+ "seeds": [
+  0,
+  1,
+  2,
+  3,
+  4
+ ],
+ "datasets": [
+  "ALOI",
+  "annthyroid",
+  "cardio",
+  "letter",
+  "mammography",
+  "mnist",
+  "optdigits",
+  "PageBlocks",
+  "pendigits",
+  "satimage-2",
+  "shuttle",
+  "thyroid",
+  "vowels",
+  "Waveform",
+  "Wilt"
+ ],
+ "member_sets": [
+  "E-all (IForest+PCA+ECOD+HBOS+KNN+LOF)",
+  "the 20 triples"
+ ],
+ "sw_method": "thesis.spectral.spectral_weights on the members' training scores, K_train = ceil(budget * n_train); SW fusion = min-max fitted on training scores (not clipped) + weighted mean; on fallback the SW score is the EQ score",
+ "comparators": {
+  "EQ": "min-max + mean (E2 primary config)",
+  "IForest": "cached E1 IForest, default parameters, seed = split seed",
+  "oracle-best / median member": "test labels, references only"
+ },
+ "unit": "seed-mean FP@K per dataset (5 seeds), rounded to 9 decimals",
+ "test": "scipy.stats.wilcoxon(sw, other, alternative=\"less\", zero_method=\"wilcox\")",
+ "alpha": 0.05,
+ "scipy": "1.17.1",
+ "procedure": "fixed sequence: H-SW2 is tested only if H-SW1 is rejected",
+ "decisions": {
+  "H-SW1": "null not rejected",
+  "H-SW2": "not tested (fixed sequence: H-SW1 not rejected)"
+ },
+ "selection_hit_rule": "SW selection counts as oracle-best if its test FP@K equals the smallest member FP@K (ties: any of the tied members)",
+ "spearman_rule": "per split, Spearman of v against the members' -FP@K on test (test labels, descriptive); undefined (NaN) when either is constant",
+ "equal_weights_vs_e2_runs": {
+  "n_compared": 3000,
+  "n_unmatched": 0,
+  "n_not_identical": 0,
+  "max_abs_diff": 0.0
+ },
+ "members_vs_e1_runs": {
+  "n_compared": 900,
+  "n_unmatched": 0,
+  "n_not_identical": 0,
+  "max_abs_diff": 0.0
+ },
+ "rebuild_from_csv_identical": true,
+ "figure": "results/figures/sw/sw_step2_delta_eall_2pct.pdf (+ .png), 16 cm",
+ "runtime_s": 26.6,
+ "note": "no fraud data; Step 3 not run"
+}

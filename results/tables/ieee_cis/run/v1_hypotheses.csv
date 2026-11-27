@@ -1,0 +1,5 @@
+hypothesis,dataset,comparison,d_fp,d_fp_ci_low,d_fp_ci_high,verdict_ieee,verdict_ulb,status,rule,commit
+H1a,IEEE-CIS,E-bench:minmax+mean vs median_single,25.899999999999636,-13.614999999998552,68.32909722222145,no difference shown,no difference shown,not supported,the criterion holds on both datasets,4f3b58f392d05e785500c673bdc86ece81cfe182
+H1b,IEEE-CIS,E-bench:minmax+mean vs default_iforest,224.39999999999964,183.57500000000036,274.005,no difference shown,no difference shown,not supported,the criterion holds on at least one dataset,4f3b58f392d05e785500c673bdc86ece81cfe182
+H2b (secondary),IEEE-CIS,E-bench-5%:minmax+mean vs E-bench:minmax+mean,-347.0,-420.4250000000005,-283.99,fewer false alarms,,descriptive only,"E-bench-5% vs E-lit at the primary budget of each dataset, same statistic and criterion (a superiority check; non-inferiority is not tested); descriptive only",4f3b58f392d05e785500c673bdc86ece81cfe182
+H2b (primary),IEEE-CIS,E-bench vs E-lit,0.0,,,,,"degenerate: the 2% rule selected E-lit, so E-bench vs E-lit has dFP@K = 0 by identity (benchmark selection confirms the literature default); reported as such",,4f3b58f392d05e785500c673bdc86ece81cfe182

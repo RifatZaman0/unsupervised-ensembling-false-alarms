@@ -1,5 +1,6 @@
-"""Central paths. Code, raw data and the score cache live in this repo (outside OneDrive);
-results/ and writing live in the OneDrive project folder next to the thesis documents."""
+"""Central paths. Raw data, the score cache and results/ live in this repository.
+
+Set THESIS_PROJECT_DIR to read and write results/ (and tdk/main.tex) in another folder."""
 import os
 from pathlib import Path
 
@@ -8,8 +9,7 @@ DATA_RAW = REPO / "data" / "raw"
 CACHE = REPO / "cache" / "scores"
 FROZEN_CONFIG = REPO / "frozen_config.json"
 
-PROJECT = Path(os.environ.get(
-    "THESIS_PROJECT_DIR", r"C:\Users\rifat\OneDrive\Documents\thesis-docs"))
+PROJECT = Path(os.environ.get("THESIS_PROJECT_DIR", REPO))
 RESULTS = PROJECT / "results"
 TABLES = RESULTS / "tables"
 FIGURES = RESULTS / "figures"

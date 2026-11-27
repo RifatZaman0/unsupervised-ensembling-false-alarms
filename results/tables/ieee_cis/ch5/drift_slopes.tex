@@ -1,0 +1,21 @@
+% commit 625bb29 (data 4f3b58f); source results/tables/ieee_cis/run/rq4_drift_monthly.csv, rq4_drift_slopes.csv
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\caption{Monthly r per member (q = 0.98) and the Evidently drift share of each month against month 1. Slope: least-squares slope of $|r - 1|$ on the drift share over the five months (exploratory, no CI).}
+\label{tab:drift-slopes}
+\begin{tabular}{lrrrrrr}
+\toprule
+Member & r, month 2 & r, month 3 & r, month 4 & r, month 5 & r, month 6 & Slope \\
+\midrule
+IForest & 0.532 & 0.518 & 0.567 & 0.802 & 0.694 & −1.53 \\
+PCA & 0.649 & 0.679 & 0.785 & 0.959 & 0.967 & −1.69 \\
+ECOD & 0.637 & 0.760 & 0.693 & 0.883 & 1.009 & −1.98 \\
+HBOS & 0.471 & 0.584 & 0.429 & 0.464 & 0.587 & −0.65 \\
+KNN & 0.798 & 1.224 & 0.792 & 1.042 & 1.440 & −1.48 \\
+LOF & 1.024 & 1.474 & 1.293 & 1.292 & 1.757 & +3.48 \\
+Drift share & 0.231 & 0.308 & 0.269 & 0.308 & 0.269 &  \\
+\bottomrule
+\end{tabular}
+\end{table}

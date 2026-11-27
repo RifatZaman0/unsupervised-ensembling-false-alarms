@@ -1,0 +1,44 @@
+% commit 625bb29 (data 4f3b58f); source results/tables/ieee_cis/run/rq4_bound_check.csv
+\begin{table}[t]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\caption{Label-free bound check of train-percentile + median per test month (q = 0.98, mean of the IForest seeds): fused alert rate $\le$ share of rows with at least $\lceil m/2\rceil - b$ healthy members above the threshold (event rate) $\le$ the bound of the proposition. b = 1 treats the member with the largest monthly r as broken.}
+\label{tab:bound-check}
+\begin{tabular}{lrrlrrr}
+\toprule
+Ensemble & Month & b & Broken member (r) & Fused alert rate (\%) & Event rate (\%) & Bound (\%) \\
+\midrule
+E-bench & 2 & 0 & none & 1.152 & 1.152 & 2.069 \\
+E-bench & 2 & 1 & KNN (0.80) & 1.152 & 1.608 & 2.509 \\
+E-bench-5\% & 2 & 0 & none & 1.462 & 1.462 & 3.267 \\
+E-bench-5\% & 2 & 1 & LOF (1.02) & 1.462 & 2.755 & 3.909 \\
+E-all & 2 & 0 & none & 1.174 & 1.630 & 4.501 \\
+E-all & 2 & 1 & LOF (1.02) & 1.174 & 2.521 & 5.358 \\
+E-bench & 3 & 0 & none & 1.140 & 1.140 & 2.524 \\
+E-bench & 3 & 1 & KNN (1.22) & 1.140 & 1.700 & 2.556 \\
+E-bench-5\% & 3 & 0 & none & 2.224 & 2.224 & 4.309 \\
+E-bench-5\% & 3 & 1 & LOF (1.47) & 2.224 & 3.724 & 4.885 \\
+E-all & 3 & 0 & none & 1.557 & 2.258 & 5.652 \\
+E-all & 3 & 1 & LOF (1.47) & 1.557 & 3.259 & 6.505 \\
+E-bench & 4 & 0 & none & 1.297 & 1.297 & 2.269 \\
+E-bench & 4 & 1 & KNN (0.79) & 1.297 & 1.919 & 2.884 \\
+E-bench-5\% & 4 & 0 & none & 1.588 & 1.588 & 3.795 \\
+E-bench-5\% & 4 & 1 & LOF (1.29) & 1.588 & 3.022 & 4.270 \\
+E-all & 4 & 0 & none & 1.279 & 1.860 & 5.122 \\
+E-all & 4 & 1 & LOF (1.29) & 1.279 & 2.874 & 5.912 \\
+E-bench & 5 & 0 & none & 1.739 & 1.739 & 2.924 \\
+E-bench & 5 & 1 & KNN (1.04) & 1.739 & 2.432 & 3.713 \\
+E-bench-5\% & 5 & 0 & none & 2.146 & 2.146 & 4.354 \\
+E-bench-5\% & 5 & 1 & LOF (1.29) & 2.146 & 3.521 & 5.271 \\
+E-all & 5 & 0 & none & 1.849 & 2.466 & 5.845 \\
+E-all & 5 & 1 & LOF (1.29) & 1.849 & 3.439 & 6.911 \\
+E-bench & 6 & 0 & none & 1.635 & 1.635 & 3.228 \\
+E-bench & 6 & 1 & KNN (1.44) & 1.635 & 2.267 & 3.514 \\
+E-bench-5\% & 6 & 0 & none & 2.772 & 2.772 & 5.164 \\
+E-bench-5\% & 6 & 1 & LOF (1.76) & 2.772 & 4.109 & 5.726 \\
+E-all & 6 & 0 & none & 2.065 & 2.811 & 6.611 \\
+E-all & 6 & 1 & LOF (1.76) & 2.065 & 3.690 & 7.441 \\
+\bottomrule
+\end{tabular}
+\end{table}

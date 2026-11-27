@@ -1,0 +1,7 @@
+detector,adbench_median_s,adbench_max_s,adbench_max_dataset,adbench_total_s,ulb_day1_fit_s,ulb_runs
+IForest,0.149,0.39,shuttle,12.9,3.3,5
+PCA,0.003,0.06,ALOI,0.9,0.3,1
+ECOD,0.01,0.25,ALOI,2.7,3.6,1
+HBOS,0.005,2.48,ALOI,3.1,8.1,1
+KNN,0.034,3.45,shuttle,24.3,10.1,1
+LOF,0.052,6.24,shuttle,39.1,10.0,1

@@ -1,0 +1,32 @@
+% commit 1c6ad9229d4c12d400707e3090d848fd71a02f17 (tables 83ddbda); source results/tables/e3_ulb/e3_ulb_threshold.csv
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4.5pt}
+\caption{ULB threshold check: day-1 training-score quantile thresholds applied unchanged to day 2 (seed means; ensembles with min-max + mean).}
+\label{tab:e3-ulb-threshold}
+\begin{tabular}{lrrrrrr}
+\toprule
+Method & q & Alert rate (\%) & 1 - q (\%) & FPR (\%) & Recall & Precision \\
+\midrule
+IForest & 0.998 & 0.179 & 0.2 & 0.148 & 0.208 & 0.176 \\
+IForest & 0.995 & 0.513 & 0.5 & 0.461 & 0.352 & 0.104 \\
+PCA & 0.998 & 0.178 & 0.2 & 0.150 & 0.185 & 0.157 \\
+PCA & 0.995 & 0.487 & 0.5 & 0.438 & 0.327 & 0.101 \\
+ECOD & 0.998 & 0.176 & 0.2 & 0.142 & 0.227 & 0.194 \\
+ECOD & 0.995 & 0.553 & 0.5 & 0.481 & 0.488 & 0.133 \\
+HBOS & 0.998 & 0.164 & 0.2 & 0.124 & 0.270 & 0.248 \\
+HBOS & 0.995 & 0.546 & 0.5 & 0.458 & 0.592 & 0.163 \\
+KNN & 0.998 & 0.249 & 0.2 & 0.223 & 0.175 & 0.106 \\
+KNN & 0.995 & 0.661 & 0.5 & 0.589 & 0.488 & 0.111 \\
+LOF & 0.998 & 8.220 & 0.2 & 8.211 & 0.142 & 0.003 \\
+LOF & 0.995 & 17.035 & 0.5 & 17.029 & 0.213 & 0.002 \\
+E-bench (= E-lit), min-max + mean & 0.998 & 0.187 & 0.2 & 0.158 & 0.194 & 0.157 \\
+E-bench (= E-lit), min-max + mean & 0.995 & 0.516 & 0.5 & 0.460 & 0.373 & 0.109 \\
+E-bench-5\%, min-max + mean & 0.998 & 0.473 & 0.2 & 0.445 & 0.191 & 0.061 \\
+E-bench-5\%, min-max + mean & 0.995 & 0.921 & 0.5 & 0.862 & 0.400 & 0.066 \\
+E-all, min-max + mean & 0.998 & 0.180 & 0.2 & 0.147 & 0.221 & 0.185 \\
+E-all, min-max + mean & 0.995 & 0.538 & 0.5 & 0.463 & 0.502 & 0.141 \\
+\bottomrule
+\end{tabular}
+\end{table}

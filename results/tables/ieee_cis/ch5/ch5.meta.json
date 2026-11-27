@@ -1,0 +1,38 @@
+{
+ "commit": "625bb29467dcbc28314e1ea7a7c7c2173be0fcab",
+ "dirty": false,
+ "command": "python -m thesis.export_ch5",
+ "created_utc": "2026-11-19T02:42:44+00:00",
+ "reads": {
+  "results/tables/ieee_cis/run/": "4f3b58f",
+  "results/tables/robust_fusion/adbench_static.csv": "2675c67",
+  "results/tables/e3_ulb/lof/l2_controls.csv": "c1d33f1"
+ },
+ "recomputed": "nothing: values are selected, combined and rounded only",
+ "figures": {
+  "width_cm": 16.0,
+  "font_pt": 8,
+  "inks": [
+   "#0b0b0b",
+   "#6b6a64"
+  ]
+ },
+ "written": [
+  "results/tables/ieee_cis/ch5/hypotheses.tex",
+  "results/tables/ieee_cis/ch5/h4r_summary.tex",
+  "results/tables/ieee_cis/ch5/h4r_triples.tex",
+  "results/tables/ieee_cis/ch5/guard_events.tex",
+  "results/tables/ieee_cis/ch5/bound_check.tex",
+  "results/tables/ieee_cis/ch5/drift_slopes.tex",
+  "results/tables/ieee_cis/ch5/h4d_fragility.tex",
+  "results/tables/ieee_cis/ch5/pre_deployment.tex",
+  "results/tables/ieee_cis/ch5/context.tex",
+  "results/tables/robust_fusion/adbench_static.tex",
+  "results/figures/ieee_cis/h4r_tradeoff.pdf",
+  "results/figures/ieee_cis/h4r_tradeoff.png",
+  "results/figures/ieee_cis/h4a_scatter.pdf",
+  "results/figures/ieee_cis/h4a_scatter.png",
+  "results/figures/e3_ulb/lof/l2_controls_r.pdf",
+  "results/figures/e3_ulb/lof/l2_controls_r.png"
+ ]
+}

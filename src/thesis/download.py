@@ -5,7 +5,7 @@
     python -m thesis.download --write-manifest   # record checksums (only when adding a source)
 
 ADBench is fetched from a pinned commit of github.com/Minqi824/ADBench, ULB from Kaggle
-(mlg-ulb/creditcardfraud, needs %USERPROFILE%\\.kaggle\\kaggle.json).
+(mlg-ulb/creditcardfraud, needs a Kaggle API token).
 """
 from __future__ import annotations
 

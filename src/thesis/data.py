@@ -1,4 +1,4 @@
-"""Dataset loaders and train/test splits (Master Plan § Dataset decision).
+"""Dataset loaders and train/test splits.
 
 Every split runs its leakage checks before returning, so a split that breaks a rule never
 reaches a detector. Labels are returned separately and only for evaluation; nothing in this

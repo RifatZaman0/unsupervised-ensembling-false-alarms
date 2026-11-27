@@ -7,7 +7,7 @@
 - versions:        Python and the libraries the numbers depend on
 - runtimes:        fit + score seconds per detector (ADBench: from the score cache; ULB: day-1
                    fit, training scores only, from zero_variance.csv) and the machine they ran on
-- duplicates:      LaTeX only, from results/tables/datasets/duplicates.csv (supervisor's B01b)
+- duplicates:      LaTeX only, from results/tables/datasets/duplicates.csv
 No detector is fitted here. Every .tex fits the 16 cm TDK text block (tests/test_tdk_exports.py).
 """
 from __future__ import annotations
@@ -110,7 +110,7 @@ def hyperparameter_table() -> pd.DataFrame:
 
 
 def duplicates_table(dup: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
-    """The supervisor's duplicate table (B01b) from results/tables/datasets/duplicates.csv:
+    """The duplicate table from results/tables/datasets/duplicates.csv:
     one row per set with exact (features, label) duplicates, and the names of the sets
     without any. Nothing is recounted here."""
     has = dup[dup.rows_removed > 0]

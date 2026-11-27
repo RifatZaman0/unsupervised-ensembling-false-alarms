@@ -1,0 +1,34 @@
+% commit 625bb29 (data 4f3b58f); source results/tables/ieee_cis/run/rq4_h4r_triples.csv
+\begin{table}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{H4r and H4r-cost per three-member ensemble (q = 0.98; budget 2\%, daily K). FP = total FP@K over the test days, IForest-containing ensembles averaged over five seeds. The pre-registered cost statistic is the ratio of the mean totals (H4r-cost); the per-ensemble change is descriptive. Robust = train-percentile + median; frozen = min-max + mean.}
+\label{tab:h4r-triples}
+\begin{tabular}{lrrrrrr}
+\toprule
+Ensemble & D robust & D frozen & dD & FP robust & FP frozen & FP change (\%) \\
+\midrule
+IForest, PCA, ECOD & 0.403 & 0.427 & −0.024 & 8366.0 & 8196.2 & +2.1 \\
+IForest, PCA, HBOS & 0.391 & 0.515 & −0.124 & 8960.3 & 8662.2 & +3.4 \\
+IForest, PCA, KNN (E-bench) & 0.378 & 0.413 & −0.036 & 8888.0 & 8633.4 & +2.9 \\
+IForest, PCA, LOF & 0.285 & 0.424 & −0.139 & 8482.5 & 8347.6 & +1.6 \\
+IForest, ECOD, HBOS & 0.446 & 0.491 & −0.045 & 8127.4 & 8188.0 & −0.7 \\
+IForest, ECOD, KNN & 0.269 & 0.459 & −0.190 & 8248.0 & 8070.2 & +2.2 \\
+IForest, ECOD, LOF & 0.306 & 0.480 & −0.174 & 7943.0 & 7927.6 & +0.2 \\
+IForest, HBOS, KNN & 0.374 & 0.546 & −0.171 & 8740.9 & 8545.6 & +2.3 \\
+IForest, HBOS, LOF & 0.529 & 0.535 & −0.006 & 8181.8 & 8294.6 & −1.4 \\
+IForest, KNN, LOF (E-bench-5\%) & 0.209 & 0.457 & −0.247 & 8325.8 & 8263.8 & +0.8 \\
+PCA, ECOD, HBOS & 0.342 & 0.397 & −0.055 & 8784.7 & 8293.0 & +5.9 \\
+PCA, ECOD, KNN & 0.239 & 0.269 & −0.030 & 8843.5 & 8016.0 & +10.3 \\
+PCA, ECOD, LOF & 0.240 & 0.257 & −0.017 & 8164.3 & 7676.0 & +6.4 \\
+PCA, HBOS, KNN & 0.319 & 0.503 & −0.185 & 9014.0 & 8962.0 & +0.6 \\
+PCA, HBOS, LOF & 0.462 & 0.498 & −0.036 & 8782.0 & 8512.0 & +3.2 \\
+PCA, KNN, LOF & 0.213 & 0.219 & −0.006 & 8823.0 & 8357.0 & +5.6 \\
+ECOD, HBOS, KNN & 0.328 & 0.410 & −0.082 & 8594.0 & 8134.0 & +5.7 \\
+ECOD, HBOS, LOF & 0.423 & 0.390 & +0.034 & 7942.5 & 7881.0 & +0.8 \\
+ECOD, KNN, LOF & 0.230 & 0.230 & +0.000 & 8060.0 & 7405.0 & +8.8 \\
+HBOS, KNN, LOF & 0.290 & 0.548 & −0.258 & 8612.7 & 8398.0 & +2.6 \\
+\bottomrule
+\end{tabular}
+\end{table}

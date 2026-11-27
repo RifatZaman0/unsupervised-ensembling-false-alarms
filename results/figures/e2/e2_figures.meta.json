@@ -1,0 +1,42 @@
+{
+ "commit": "ecde099b42287b5ab96ad43d93933caaa00bc126",
+ "dirty": false,
+ "cache_key": "21ba8c24b9",
+ "protocol": {
+  "zscore_inputs": true,
+  "k_rule": "ceil",
+  "pca_drop_zero_variance": true,
+  "adbench_dedup": false
+ },
+ "created_utc": "2026-10-30T21:14:07+00:00",
+ "tables_commit": "8b25943a3f5a3eed83a3f7252f8063cd10d7fe4f",
+ "source": "e2_per_dataset.csv, e2_summary.csv, e2_friedman.csv (seed means per dataset)",
+ "primary_config": [
+  "minmax",
+  "mean"
+ ],
+ "e_lit": "IForest+PCA+KNN",
+ "gain": "-(FP@K ensemble - FP@K member) / K x 100 (false alarms saved per 100 alerts); best member chosen per run with test labels (oracle reference)",
+ "h2a_rho_jaccard_vs_gain_best": {
+  "2%": {
+   "rho_pooled": 0.2549455966535868,
+   "p_pooled": 3.1075868504630163e-09,
+   "n_points": 525,
+   "rho_within_median": 0.3842544036642165,
+   "n_datasets_rho_negative": 1
+  },
+  "5%": {
+   "rho_pooled": 0.2537356365193212,
+   "p_pooled": 3.707792492062683e-09,
+   "n_points": 525,
+   "rho_within_median": 0.32156862745098047,
+   "n_datasets_rho_negative": 5
+  }
+ },
+ "figures": [
+  "overlap_vs_gain",
+  "pair_gain_heatmap",
+  "triple_ranking"
+ ],
+ "latex": "tables/e2/e2_triples.tex"
+}

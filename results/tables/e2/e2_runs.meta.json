@@ -1,0 +1,78 @@
+{
+ "commit": "8b25943a3f5a3eed83a3f7252f8063cd10d7fe4f",
+ "dirty": false,
+ "command": "python -m thesis.e2",
+ "created_utc": "2026-10-29T17:15:58+00:00",
+ "cache_key": "21ba8c24b9",
+ "protocol": {
+  "zscore_inputs": true,
+  "k_rule": "ceil",
+  "pca_drop_zero_variance": true,
+  "adbench_dedup": false
+ },
+ "preprocessing": "zscore-train",
+ "detector_params": {
+  "IForest": {
+   "n_estimators": 100,
+   "max_samples": "auto"
+  },
+  "PCA": {
+   "standardization": true,
+   "min_variance_ratio": 1e-10
+  },
+  "ECOD": {},
+  "HBOS": {
+   "n_bins": 10,
+   "alpha": 0.1,
+   "tol": 0.5
+  },
+  "KNN": {
+   "n_neighbors": 5,
+   "method": "largest"
+  },
+  "LOF": {
+   "n_neighbors": 20,
+   "novelty": true
+  }
+ },
+ "budgets": [
+  0.02,
+  0.05
+ ],
+ "fusion_configs": [
+  [
+   "minmax",
+   "mean"
+  ],
+  [
+   "minmax",
+   "max"
+  ],
+  [
+   "zscore",
+   "mean"
+  ],
+  [
+   "zscore",
+   "max"
+  ],
+  [
+   "percentile",
+   "mean"
+  ],
+  [
+   "percentile",
+   "max"
+  ]
+ ],
+ "primary_config": [
+  "minmax",
+  "mean"
+ ],
+ "n_combos": 35,
+ "k_rule": "K = ceil(budget * n_test), at least 1; ties at the K-th score split in expectation; training overlap uses K over n_train",
+ "scores_from_cache": 450,
+ "scores_computed": 0,
+ "max_abs_diff_member_fp_vs_e1": 0.0,
+ "note": "best member chosen per run with test labels (oracle reference, ADBench only); overlap from training scores only"
+}

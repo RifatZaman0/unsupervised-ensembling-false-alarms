@@ -1,0 +1,32 @@
+{
+ "commit": "2675c676e9cb186826b15f718ea3da3c646d71d5",
+ "dirty": false,
+ "command": "python -m thesis.robust_fusion",
+ "created_utc": "2026-11-17T03:36:19+00:00",
+ "configs": [
+  "minmax+mean",
+  "minmax+median",
+  "percentile+mean",
+  "percentile+median"
+ ],
+ "robust": "percentile+median",
+ "ulb_quantiles": [
+  0.999,
+  0.998,
+  0.995
+ ],
+ "ulb_budgets": [
+  0.001,
+  0.002,
+  0.005
+ ],
+ "adbench_budgets": [
+  0.02,
+  0.05
+ ],
+ "score_cache": "21ba8c24b9",
+ "labels_read": "ULB day-2 and ADBench test labels for FP@K / FP / TP only; calibrators and thresholds from training scores only; the bound check is label-free",
+ "readme": "docs/notes/robust_fusion_check_2026-11-17/README.md: every value matches after rounding to the README's precision",
+ "note": "Development data (ULB, ADBench). Developed on ULB. freeze-v1 fusion configs unchanged.",
+ "runtime_s": 31.2
+}

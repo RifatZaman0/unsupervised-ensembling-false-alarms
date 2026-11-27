@@ -1,9 +1,9 @@
-"""Zero-variance check of detector training scores, before the freeze (B06b).
+"""Zero-variance check of detector training scores, before the freeze.
 
     python -m thesis.zero_variance
 
-Under z-score calibration a member whose training scores are constant maps to 0 (fusion.py);
-the supervisor has not confirmed that rule yet. This counts how often it would apply:
+Under z-score calibration a member whose training scores are constant maps to 0 (fusion.py).
+This counts how often that rule would apply:
 - ADBench: every cached training-score vector under the main cache key (15 sets x 5 seeds x 6);
 - ULB: the 6 detectors fitted on day 1 with the planned preprocessing (z-score with day-1
   statistics, KNN / LOF on the 30,000-row sample, IForest with seeds 0-4).

@@ -1,0 +1,30 @@
+{
+ "commit": "79766294caa7afe8dca5f6fb09d9f4708ae1cc3f",
+ "dirty": false,
+ "command": "python -m thesis.guard_ulb",
+ "created_utc": "2026-11-17T02:14:47+00:00",
+ "guard": {
+  "side": "one-sided",
+  "basis": "absolute",
+  "q": "1 - budget",
+  "c": 3,
+  "ties": "r = c passes; exact on integer alert counts (fractions.Fraction)",
+  "fallback": "static ensemble if fewer than 2 members pass",
+  "fusion": "minmax+mean"
+ },
+ "labels_read": "day-2 labels for FP@K; day-1 labels (12-24 h) only to choose chosen_single; member decisions are label-free",
+ "chosen_single": "lowest FP@K on day 1, 12-24 h, members fitted on day 1, 0-12 h (lof_diag L2b); pool order breaks ties",
+ "schemes": {
+  "transaction": "transaction-level: day-2 rows resampled with replacement, same size",
+  "hour-block": "the 24 hours of day 2 drawn with replacement, each with all its rows; K recomputed from the resample size"
+ },
+ "budgets": [
+  0.001,
+  0.002,
+  0.005
+ ],
+ "resamples": 1000,
+ "bootstrap_seed": 0,
+ "note": "ULB is development data for RQ4. A day-block CI is impossible on ULB (one test day); the hour-block scheme is the block analogue.",
+ "runtime_s": 448.8
+}

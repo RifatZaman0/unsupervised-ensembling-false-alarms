@@ -1,0 +1,10 @@
+budget,ensemble,kept,fallback,changed,commit
+0.005,E-bench,IForest+PCA+KNN,False,False,4f3b58f392d05e785500c673bdc86ece81cfe182
+0.005,E-bench-5%,IForest+KNN+LOF,False,False,4f3b58f392d05e785500c673bdc86ece81cfe182
+0.005,E-all,IForest+PCA+ECOD+HBOS+KNN+LOF,False,False,4f3b58f392d05e785500c673bdc86ece81cfe182
+0.01,E-bench,IForest+PCA+KNN,False,False,4f3b58f392d05e785500c673bdc86ece81cfe182
+0.01,E-bench-5%,IForest+KNN+LOF,False,False,4f3b58f392d05e785500c673bdc86ece81cfe182
+0.01,E-all,IForest+PCA+ECOD+HBOS+KNN+LOF,False,False,4f3b58f392d05e785500c673bdc86ece81cfe182
+0.02,E-bench,IForest+PCA+KNN,False,False,4f3b58f392d05e785500c673bdc86ece81cfe182
+0.02,E-bench-5%,IForest+KNN+LOF,False,False,4f3b58f392d05e785500c673bdc86ece81cfe182
+0.02,E-all,IForest+PCA+ECOD+HBOS+KNN+LOF,False,False,4f3b58f392d05e785500c673bdc86ece81cfe182

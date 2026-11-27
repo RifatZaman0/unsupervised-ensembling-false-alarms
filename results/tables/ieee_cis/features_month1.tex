@@ -1,0 +1,39 @@
+% commit bd2ad04 (data 17525fc); source results/tables/ieee_cis/features_month1.csv
+\begin{table}[t]
+\centering
+\footnotesize
+\caption{IEEE-CIS features fixed from month 1 without labels (freeze-v2): the 26 columns with a month-1 missing share below 20\%. Medians and frequency maps are fitted on the fit window of each run.}
+\label{tab:ieee-features}
+\begin{tabular}{lllr}
+\toprule
+Feature & Type & Transform & Missing in month 1 (\%) \\
+\midrule
+TransactionAmt & numerical & log1p, median imputation & 0.00 \\
+ProductCD & categorical & frequency encoding & 0.00 \\
+card1 & categorical & frequency encoding & 0.00 \\
+card2 & categorical & frequency encoding & 1.35 \\
+card3 & categorical & frequency encoding & 0.00 \\
+card4 & categorical & frequency encoding & 0.01 \\
+card5 & categorical & frequency encoding & 0.54 \\
+card6 & categorical & frequency encoding & 0.01 \\
+addr1 & categorical & frequency encoding & 10.46 \\
+addr2 & categorical & frequency encoding & 10.46 \\
+P\_emaildomain & categorical & frequency encoding & 14.69 \\
+C1 & numerical & median imputation & 0.00 \\
+C2 & numerical & median imputation & 0.00 \\
+C3 & numerical & median imputation & 0.00 \\
+C4 & numerical & median imputation & 0.00 \\
+C5 & numerical & median imputation & 0.00 \\
+C6 & numerical & median imputation & 0.00 \\
+C7 & numerical & median imputation & 0.00 \\
+C8 & numerical & median imputation & 0.00 \\
+C9 & numerical & median imputation & 0.00 \\
+C10 & numerical & median imputation & 0.00 \\
+C11 & numerical & median imputation & 0.00 \\
+C12 & numerical & median imputation & 0.00 \\
+C13 & numerical & median imputation & 0.00 \\
+C14 & numerical & median imputation & 0.00 \\
+D1 & numerical & median imputation & 0.00 \\
+\bottomrule
+\end{tabular}
+\end{table}

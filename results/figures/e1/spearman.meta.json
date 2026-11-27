@@ -1,0 +1,81 @@
+{
+ "commit": "ef2d2855935d624e330e04ba1a04c2e1b693e4a7",
+ "dirty": false,
+ "command": "python -m thesis.e1_corr",
+ "created_utc": "2026-10-28T01:26:10+00:00",
+ "cache_key": "21ba8c24b9",
+ "protocol": {
+  "zscore_inputs": true,
+  "k_rule": "ceil",
+  "pca_drop_zero_variance": true,
+  "adbench_dedup": false
+ },
+ "n_datasets": 15,
+ "n_runs": 75,
+ "nan_pairs": 0,
+ "source": "cached E1 test scores (no labels); Spearman per dataset x seed, mean over seeds, then mean over datasets",
+ "average": {
+  "IForest": {
+   "IForest": 1.0,
+   "PCA": 0.8289896974578994,
+   "ECOD": 0.8510503134042311,
+   "HBOS": 0.7622688805104774,
+   "KNN": 0.7106036631368914,
+   "LOF": 0.47029815365619704
+  },
+  "PCA": {
+   "IForest": 0.8289896974578994,
+   "PCA": 1.0,
+   "ECOD": 0.8810254550217632,
+   "HBOS": 0.6875727578629471,
+   "KNN": 0.5054049546065797,
+   "LOF": 0.31598737948069233
+  },
+  "ECOD": {
+   "IForest": 0.8510503134042311,
+   "PCA": 0.8810254550217632,
+   "ECOD": 1.0,
+   "HBOS": 0.7080879056412157,
+   "KNN": 0.5426781336286743,
+   "LOF": 0.3593116986096342
+  },
+  "HBOS": {
+   "IForest": 0.7622688805104774,
+   "PCA": 0.6875727578629471,
+   "ECOD": 0.7080879056412157,
+   "HBOS": 1.0,
+   "KNN": 0.5661432270831647,
+   "LOF": 0.3050985134694501
+  },
+  "KNN": {
+   "IForest": 0.7106036631368914,
+   "PCA": 0.5054049546065797,
+   "ECOD": 0.5426781336286743,
+   "HBOS": 0.5661432270831647,
+   "KNN": 1.0,
+   "LOF": 0.6985411661394944
+  },
+  "LOF": {
+   "IForest": 0.47029815365619704,
+   "PCA": 0.31598737948069233,
+   "ECOD": 0.3593116986096342,
+   "HBOS": 0.3050985134694501,
+   "KNN": 0.6985411661394944,
+   "LOF": 1.0
+  }
+ },
+ "least_correlated": {
+  "pair": [
+   "HBOS",
+   "LOF"
+  ],
+  "rho": 0.3050985134694501
+ },
+ "most_correlated": {
+  "pair": [
+   "PCA",
+   "ECOD"
+  ],
+  "rho": 0.8810254550217632
+ }
+}

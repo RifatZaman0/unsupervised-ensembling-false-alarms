@@ -1,0 +1,26 @@
+% commit bd2ad04 (data 98d9db2); source results/tables/e3_ulb/stress/stress_decisions.csv, stress_deltas.csv
+\begin{table}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{ULB development runs for RQ4: member sets that a rule changes, and the change in FP@K on day 2 at the 0.2\% budget against the static ensemble (paired bootstrap, 1000 resamples). Guard: r on day 2 at the day-1 threshold; pre-deployment: r from the half-day split of day 1; q = 0.998. Development data; no rule was chosen with these numbers.}
+\label{tab:ulb-stress}
+\begin{tabular}{l>{\raggedright\arraybackslash}p{3.9cm}l>{\raggedright\arraybackslash}p{3.0cm}r}
+\toprule
+Mechanism & Rules & Ensemble & Kept & dFP@K at 0.2\% [95\% CI] \\
+\midrule
+guard & all 12 & E-bench-5\% & IForest, KNN & -32.0 [-41.6, -23.0] \\
+guard & all 12 & E-all & IForest, PCA, ECOD, HBOS, KNN & -1.2 [-5.4, +2.0] \\
+pre-deployment & 1-sided rel. c = 2, 3; 2-sided rel. c = 2, 3 & E-bench & IForest, PCA & -0.8 [-3.6, +0.2] \\
+pre-deployment & 1-sided rel. c = 2, 3; 2-sided rel. c = 3 & E-bench-5\% & IForest, LOF & +6.0 [+2.6, +11.0] \\
+pre-deployment & 1-sided rel. c = 2, 3; 2-sided rel. c = 3 & E-all & IForest, PCA, ECOD, HBOS, LOF & -0.6 [-2.2, +0.2] \\
+pre-deployment & 2-sided abs. c = 2, 3 & E-bench & KNN & +17.0 [+7.4, +26.0] \\
+pre-deployment & 2-sided abs. c = 2, 3, 5 & E-bench-5\% & KNN & -13.4 [-22.6, -6.0] \\
+pre-deployment & 2-sided abs. c = 2, 3 & E-all & KNN & +23.2 [+12.8, +34.6] \\
+pre-deployment & 2-sided abs. c = 5 & E-bench & PCA, KNN & +4.0 [-0.6, +8.2] \\
+pre-deployment & 2-sided abs. c = 5 & E-all & PCA, ECOD, HBOS, KNN & -3.8 [-9.4, +0.8] \\
+pre-deployment & 2-sided rel. c = 2 & E-bench-5\% & IForest & -32.8 [-43.2, -24.0] \\
+pre-deployment & 2-sided rel. c = 2 & E-all & IForest, PCA, ECOD, HBOS & -2.6 [-6.8, +1.8] \\
+\bottomrule
+\end{tabular}
+\end{table}

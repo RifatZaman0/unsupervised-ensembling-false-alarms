@@ -1,4 +1,4 @@
-"""Evaluation metrics, computed on the test split only (Master Plan § Evaluation protocol).
+"""Evaluation metrics, computed on the test split only.
 
 Budget mode: each method flags its top K rows, K = ceil(budget * n_test).
     FP@K = K - TP@K,  Precision@K = TP@K / K,  Recall@K = TP@K / #anomalies.

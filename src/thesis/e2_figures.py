@@ -47,7 +47,7 @@ from thesis.export_datasets import git_state  # noqa: E402
 from thesis.paths import FIGURES  # noqa: E402
 
 FIG_OUT = FIGURES / "e2"
-E_LIT = combo_name(("IForest", "PCA", "KNN"))          # Master Plan: the published default
+E_LIT = combo_name(("IForest", "PCA", "KNN"))          # the published default
 PAIR_COLOR, TRIPLE_COLOR = "#2a78d6", "#eb6834"         # categorical slots 1, 2
 E_LIT_COLOR, OTHER_COLOR = "#2a78d6", "#a3a29b"    # highlight one, the rest muted
 INK, MUTED = "#0b0b0b", "#6b6a64"

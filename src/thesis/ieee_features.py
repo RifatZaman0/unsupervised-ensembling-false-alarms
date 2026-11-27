@@ -3,7 +3,7 @@
     python -m thesis.ieee_features    # writes frozen_features_v2.json (repo root) and
                                       # results/tables/ieee_cis/features_month1.{csv,meta.json}
 
-The rule (Master Plan, "How to keep IEEE-CIS easy"), applied to train_transaction.csv:
+The rule, applied to train_transaction.csv:
 1. Candidates: every column except TransactionID, isFraud, TransactionDT (the split variable)
    and the V columns (V1-V339).
 2. Keep a candidate if less than 20% of its month-1 values are missing and it takes more than

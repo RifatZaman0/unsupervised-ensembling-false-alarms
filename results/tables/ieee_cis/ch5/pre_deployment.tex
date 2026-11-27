@@ -1,0 +1,19 @@
+% commit 625bb29 (data 4f3b58f); source results/tables/ieee_cis/run/rq4_pre_deployment_r.csv, rq4_e_stress_sets.csv
+\begin{table}[t]
+\centering
+\small
+\caption{Pre-deployment check on IEEE-CIS month 1 (fit days 0--20, scored days 21--29, label-free): r per member at each budget; $\dagger$: r $>$ 3. No member failed at any budget, so E-stress equals the static ensemble everywhere (0 of 9 ensemble sets changed).}
+\label{tab:pre-deployment}
+\begin{tabular}{lrrr}
+\toprule
+Member & r, budget 0.5\% & r, budget 1\% & r, budget 2\% \\
+\midrule
+IForest & 0.000 & 0.002 & 0.202 \\
+PCA & 0.009 & 0.063 & 0.339 \\
+ECOD & 0.014 & 0.014 & 0.229 \\
+HBOS & 0.000 & 0.002 & 0.189 \\
+KNN & 0.601 & 0.613 & 0.607 \\
+LOF & 1.372 & 1.271 & 1.188 \\
+\bottomrule
+\end{tabular}
+\end{table}

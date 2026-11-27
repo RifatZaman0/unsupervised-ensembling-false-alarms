@@ -1,0 +1,47 @@
+{
+ "commit": "ef2d2855935d624e330e04ba1a04c2e1b693e4a7",
+ "dirty": false,
+ "command": "python -m thesis.e1",
+ "created_utc": "2026-10-28T01:26:05+00:00",
+ "cache_key": "21ba8c24b9",
+ "protocol": {
+  "zscore_inputs": true,
+  "k_rule": "ceil",
+  "pca_drop_zero_variance": true,
+  "adbench_dedup": false
+ },
+ "preprocessing": "zscore-train",
+ "detector_params": {
+  "IForest": {
+   "n_estimators": 100,
+   "max_samples": "auto"
+  },
+  "PCA": {
+   "standardization": true,
+   "min_variance_ratio": 1e-10
+  },
+  "ECOD": {},
+  "HBOS": {
+   "n_bins": 10,
+   "alpha": 0.1,
+   "tol": 0.5
+  },
+  "KNN": {
+   "n_neighbors": 5,
+   "method": "largest"
+  },
+  "LOF": {
+   "n_neighbors": 20,
+   "novelty": true
+  }
+ },
+ "budgets": [
+  0.02,
+  0.05
+ ],
+ "k_rule": "K = ceil(budget * n_test), at least 1; ties at the K-th score split in expectation",
+ "scores_from_cache": 450,
+ "scores_computed": 0,
+ "non_finite": [],
+ "note": "runtime_s = fit + score on one core, from the run that filled the cache"
+}

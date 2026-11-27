@@ -1,0 +1,10 @@
+ensemble,day,kept,dropped,n_kept,fallback,changed,budget,commit
+E-bench,0,IForest+PCA+KNN,,3,False,False,0.001,79766294caa7afe8dca5f6fb09d9f4708ae1cc3f
+E-bench-5%,0,IForest+KNN,LOF,2,False,True,0.001,79766294caa7afe8dca5f6fb09d9f4708ae1cc3f
+E-all,0,IForest+PCA+ECOD+HBOS+KNN,LOF,5,False,True,0.001,79766294caa7afe8dca5f6fb09d9f4708ae1cc3f
+E-bench,0,IForest+PCA+KNN,,3,False,False,0.002,79766294caa7afe8dca5f6fb09d9f4708ae1cc3f
+E-bench-5%,0,IForest+KNN,LOF,2,False,True,0.002,79766294caa7afe8dca5f6fb09d9f4708ae1cc3f
+E-all,0,IForest+PCA+ECOD+HBOS+KNN,LOF,5,False,True,0.002,79766294caa7afe8dca5f6fb09d9f4708ae1cc3f
+E-bench,0,IForest+PCA+KNN,,3,False,False,0.005,79766294caa7afe8dca5f6fb09d9f4708ae1cc3f
+E-bench-5%,0,IForest+KNN,LOF,2,False,True,0.005,79766294caa7afe8dca5f6fb09d9f4708ae1cc3f
+E-all,0,IForest+PCA+ECOD+HBOS+KNN,LOF,5,False,True,0.005,79766294caa7afe8dca5f6fb09d9f4708ae1cc3f

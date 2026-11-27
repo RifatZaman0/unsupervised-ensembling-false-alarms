@@ -1,0 +1,17 @@
+detector,setting,value,pyod_default,kind,reason
+IForest,n_estimators,100,100,PyOD default,
+IForest,max_samples,auto,auto,PyOD default,
+PCA,standardization,True,True,PyOD default,
+HBOS,n_bins,10,10,PyOD default,
+HBOS,alpha,0.1,0.1,PyOD default,
+HBOS,tol,0.5,0.5,PyOD default,
+KNN,n_neighbors,5,5,PyOD default,
+KNN,method,largest,largest,PyOD default,
+LOF,n_neighbors,20,20,PyOD default,
+LOF,novelty,True,True,PyOD default,
+all,input scaling,"z-score, training statistics",none,deviation,KNN and LOF are distance-based and need comparable feature scales; fitted on the training split only (the other four are invariant to per-feature affine scaling)
+IForest,random_state,seeds 0-4,None,deviation,IForest is the only randomised detector; 5 seeds (ADBench: seed = split seed)
+PCA,min_variance_ratio,1e-10,(not in PyOD),deviation,"PyOD's weighted PCA divides by each component's explained-variance ratio, so a zero-variance direction gives infinite scores (e.g. cardio); such components are dropped"
+ECOD,implementation,train-only ECDFs,PyOD ECOD,deviation,"PyOD 3.6.7 ECOD builds the ECDFs from the training rows plus the rows being scored, so a score depends on the batch; here the ECDFs are fixed at fit time"
+"KNN, LOF",training scores,leave-one-out,same,stated (PyOD behaviour),"PyOD's training scores exclude the row itself, as for a new row; stated because calibrators and thresholds are fitted on them"
+"KNN, LOF",fit sample,"30,000 training rows",all rows,deviation,"fit cost on fraud data; seed = split seed, or 0 without one (ULB); rows outside the sample are scored like new rows; never applies to ADBench (largest training split 29,720 rows)"

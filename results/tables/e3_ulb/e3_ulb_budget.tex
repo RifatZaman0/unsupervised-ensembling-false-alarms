@@ -1,0 +1,25 @@
+% commit 1c6ad9229d4c12d400707e3090d848fd71a02f17 (tables 83ddbda); source results/tables/e3_ulb/e3_ulb_budget.csv
+\begin{table}[t]
+\centering
+\small
+\caption{ULB day 2, budget mode at 0.2\% (K = 281), seed means; ensembles with min-max + mean. The oracle-best single is chosen with test labels (upper bound).}
+\label{tab:e3-ulb-budget}
+\begin{tabular}{lrrrrrr}
+\toprule
+Method & FP@K & P@K & R@K & PR-AUC & ROC-AUC & Regret \\
+\midrule
+IForest & 235.6 & 0.162 & 0.215 & 0.114 & 0.960 & 21.6 \\
+PCA & 242.0 & 0.139 & 0.185 & 0.105 & 0.962 & 28.0 \\
+ECOD & 231.0 & 0.178 & 0.237 & 0.145 & 0.959 & 17.0 \\
+HBOS & 214.0 & 0.238 & 0.318 & 0.180 & 0.959 & 0.0 \\
+KNN & 255.0 & 0.093 & 0.123 & 0.089 & 0.969 & 41.0 \\
+LOF & 281.0 & 0.000 & 0.000 & 0.002 & 0.379 & 67.0 \\
+E-bench (= E-lit), min-max + mean & 238.0 & 0.153 & 0.204 & 0.100 & 0.962 & 24.0 \\
+E-bench-5\%, min-max + mean & 268.4 & 0.045 & 0.060 & 0.055 & 0.957 & 54.4 \\
+E-all, min-max + mean & 231.8 & 0.175 & 0.233 & 0.126 & 0.965 & 17.8 \\
+median single & 238.8 &  &  &  &  & 24.8 \\
+default IForest & 235.6 & 0.162 & 0.215 & 0.114 & 0.960 & 21.6 \\
+oracle-best single (HBOS) & 214.0 & 0.238 & 0.318 & 0.180 & 0.959 & 0.0 \\
+\bottomrule
+\end{tabular}
+\end{table}

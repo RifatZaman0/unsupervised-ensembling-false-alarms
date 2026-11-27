@@ -1,5 +1,4 @@
-"""Score calibration and fusion: `fuse(S_train, S_test, calib, agg)` (Master Plan § Detectors,
-calibration and fusion).
+"""Score calibration and fusion: `fuse(S_train, S_test, calib, agg)`.
 
 Each member's calibrator is fitted on that member's training scores only and then applied
 unchanged to training and test scores. 3 calibrations x 2 aggregations = 6 fusion configs;
@@ -35,8 +34,7 @@ class Calibrator:
     zscore:     (s - mean) / std
     percentile: share of training scores <= s, in [0, 1]
     A constant training score vector gets scale 1 so the output stays finite; under zscore it
-    gets scale 0 instead, and every score maps to 0, so that member adds nothing to the fusion
-    (provisional, DECISIONS.md 2026-10-25).
+    gets scale 0 instead, and every score maps to 0, so that member adds nothing to the fusion.
     """
     kind: str
     loc: float = 0.0

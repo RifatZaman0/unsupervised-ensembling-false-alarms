@@ -1,0 +1,3 @@
+budget,n_datasets,n_oc_fewer,n_plain_fewer,n_ties,mean_fp_oc_eall,mean_fp_plain_eall,mean_fp_plain_iforest,mean_fp_best_plain_member,mean_fp_median_plain_member,mean_fp_best_oc_member,rel_reduction_oc_vs_plain,cond1_oc_fewer_on_more_datasets,cond2_mean_at_least_5pct_below_plain,cond3_mean_below_iforest,all_three,is_gate,commit
+0.02,15,14,0,1,41.82666666666667,47.6,48.8,40.81333333333334,50.09333333333334,35.33333333333333,0.12128851540616246,True,True,True,True,True,bfaa7e5f5a344e482b07d882e1b12e3c428f21af
+0.05,15,13,0,2,120.4,130.29333333333332,131.6,118.05333333333334,134.38583333333332,105.68,0.07593123209169055,True,True,True,True,False,bfaa7e5f5a344e482b07d882e1b12e3c428f21af

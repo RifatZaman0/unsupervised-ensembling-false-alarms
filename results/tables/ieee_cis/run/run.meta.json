@@ -1,0 +1,46 @@
+{
+ "commit": "4f3b58f392d05e785500c673bdc86ece81cfe182",
+ "dirty": false,
+ "command": "python -m thesis.e3_ieee",
+ "created_utc": "2026-11-19T01:57:35+00:00",
+ "dry_run": false,
+ "labels": "isFraud",
+ "rows": {
+  "train": 134339,
+  "test": 456201,
+  "pre_fit": 91760,
+  "pre_scored": 42579
+ },
+ "test_months": [
+  2,
+  3,
+  4,
+  5,
+  6
+ ],
+ "budgets": [
+  0.005,
+  0.01,
+  0.02
+ ],
+ "resamples": 1000,
+ "bootstrap_seed": 0,
+ "fit": {
+  "knn_lof_fit_rows": 30000,
+  "knn_lof_fallback_used": false
+ },
+ "h3b": {
+  "rho": -0.036908466337884374,
+  "ci_low": -0.5058792915506967,
+  "ci_high": 0.4048232293521333,
+  "n_windows": 21,
+  "n_undefined_resamples": 0,
+  "status": "exploratory: reported as an association, no hypothesis decision"
+ },
+ "tags": {
+  "freeze-v1": "c2c7560ce212b2f17d3ea98269bb213783e9198a",
+  "freeze-v2": "e81efc1f7ae60e2c6f86a311aaaf8e971bee7e6a",
+  "freeze-v3": "53bbd50fa5f83f5b58e4cac1c87078c7049fde1f"
+ },
+ "runtime_s": 1575.7
+}
