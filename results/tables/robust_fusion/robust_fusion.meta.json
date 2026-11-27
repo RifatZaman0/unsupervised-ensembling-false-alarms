@@ -26,7 +26,7 @@
  ],
  "score_cache": "21ba8c24b9",
  "labels_read": "ULB day-2 and ADBench test labels for FP@K / FP / TP only; calibrators and thresholds from training scores only; the bound check is label-free",
- "readme": "docs/notes/robust_fusion_check_2026-11-17/README.md: every value matches after rounding to the README's precision",
+ "readme": "development check with stand-alone scripts on the score cache: every value matches after rounding to that check's precision",
  "note": "Development data (ULB, ADBench). Developed on ULB. freeze-v1 fusion configs unchanged.",
  "runtime_s": 31.2
 }

@@ -346,7 +346,7 @@ def adbench_summary(cells: pd.DataFrame) -> pd.DataFrame:
     return t
 
 
-# ---------------------------------------------------------------- README reference values
+# ---------------------------------------------------------------- development-check reference values
 
 README_BUDGET = {   # method -> FP@K at 0.1 / 0.2 / 0.5 %
     "HBOS": (94, 214, 582), "LOF": (141, 281, 701),
@@ -371,7 +371,7 @@ def _ndigits(v) -> int:
 
 
 def readme_differences(budget: pd.DataFrame, thr: pd.DataFrame, adb: pd.DataFrame | None) -> list[str]:
-    """Every README value against the rebuilt one, after rounding to the README's precision."""
+    """Every development-check value against the rebuilt one, after rounding to that check's precision."""
     bad = []
     bt = budget.set_index(["method", "budget"]).fp_at_k
     for m, vals in README_BUDGET.items():
@@ -457,8 +457,8 @@ def main(argv: list[str]) -> None:
             "adbench_budgets": list(metrics.ADBENCH_BUDGETS), "score_cache": scorecache.cache_key(),
             "labels_read": "ULB day-2 and ADBench test labels for FP@K / FP / TP only; calibrators "
                            "and thresholds from training scores only; the bound check is label-free",
-            "readme": "docs/notes/robust_fusion_check_2026-11-17/README.md: every value matches "
-                      "after rounding to the README's precision",
+            "readme": "development check with stand-alone scripts on the score cache: every value matches "
+                      "after rounding to that check's precision",
             "note": "Development data (ULB, ADBench). Developed on ULB. freeze-v1 fusion configs unchanged.",
             "runtime_s": round(time.perf_counter() - t0, 1)}
     (OUT / "robust_fusion.meta.json").write_text(json.dumps(meta, indent=1) + "\n", encoding="utf-8")

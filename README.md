@@ -189,6 +189,8 @@ results/
 
 Outputs come with a `*.meta.json` file that records the command, the commit and the inputs.
 
+Two note lines in results/tables/e2/ebench.md and robust_fusion.meta.json were reworded for publication; no number changed.
+
 ## License
 
 MIT, see [LICENSE](LICENSE).

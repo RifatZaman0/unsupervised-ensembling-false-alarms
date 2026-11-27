@@ -1,4 +1,4 @@
-"""Experimental Setup tables (TDK §3.4) to results/tables/setup/, as CSV and booktabs LaTeX.
+"""Experimental Setup tables (the TDK paper, tag tdk-submitted) to results/tables/setup/, as CSV and booktabs LaTeX.
 
     python -m thesis.export_setup        (after python -m thesis.zero_variance)
 

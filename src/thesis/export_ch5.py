@@ -9,10 +9,10 @@ the CSVs, and every sentence that states a direction or a comparison is checked 
 values first (ValueError if it would be false).
 
 Writes:
-- results/tables/ieee_cis/ch5/*.tex           C23 (hypotheses), C24 (H4r), C26 (guard events),
-                                              C28 (appendix tables), and ch5.meta.json
-- results/figures/ieee_cis/h4r_tradeoff.pdf   C25 (alert-rate deviation vs FP@K change)
-- results/figures/ieee_cis/h4a_scatter.pdf    C27 (pre-deployment vs monthly |log r|)
+- results/tables/ieee_cis/ch5/*.tex           hypothesis summary table, H4r summary table, guard-event
+                                              table, appendix tables, and ch5.meta.json
+- results/figures/ieee_cis/h4r_tradeoff.pdf   trade-off figure (alert-rate deviation vs FP@K change)
+- results/figures/ieee_cis/h4a_scatter.pdf    pre-deployment figure (pre-deployment vs monthly |log r|)
 - results/figures/e3_ulb/lof/l2_controls_r.pdf  ULB LOF break (r per control split)
 - results/tables/robust_fusion/adbench_static.tex  ADBench static cost of robust fusion
 Figures: PDF (+ PNG preview), 16 cm wide, no title inside, black-and-white readable (two inks
@@ -128,7 +128,7 @@ def h4a_note(t: dict, g: dict) -> str:
     return txt
 
 
-# ---------------------------------------------------------------- C23: hypothesis summary
+# ---------------------------------------------------------------- hypothesis summary table
 
 def hypothesis_table(t: dict, meta: dict) -> pd.DataFrame:
     h = t["rq4_hypotheses"].set_index("hypothesis")
@@ -217,7 +217,7 @@ def hypothesis_table(t: dict, meta: dict) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-# ---------------------------------------------------------------- C24: H4r
+# ---------------------------------------------------------------- H4r summary table
 
 def h4r_main_table(t: dict) -> pd.DataFrame:
     h = t["rq4_hypotheses"].set_index("hypothesis").loc["H4r"]
@@ -248,7 +248,7 @@ def h4r_triples_table(t: dict) -> pd.DataFrame:
             lambda v: num(v, 1, True))})
 
 
-# ---------------------------------------------------------------- C26: guard events
+# ---------------------------------------------------------------- guard-event table
 
 def guard_table(t: dict) -> pd.DataFrame:
     g = guard_facts(t)
@@ -277,7 +277,7 @@ def guard_table(t: dict) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=["", *[f"Day {d}" for d in days]])
 
 
-# ---------------------------------------------------------------- C28: appendix tables
+# ---------------------------------------------------------------- appendix tables
 
 def bound_table(t: dict) -> pd.DataFrame:
     b = t["rq4_bound_check"].copy()
@@ -363,7 +363,7 @@ def _axes(height_cm: float):
 
 
 def tradeoff_figure(t: dict):
-    """C25: per triple, dD (x) against the relative change of total FP@K (y, %); the mean with
+    """Trade-off figure: per triple, dD (x) against the relative change of total FP@K (y, %); the mean with
     the H4r and H4r-cost CIs; the +5% margin."""
     tri = t["rq4_h4r_triples"]
     h = t["rq4_hypotheses"].set_index("hypothesis")
@@ -406,7 +406,7 @@ def h4a_groups(t: dict) -> dict[str, str]:
 
 
 def h4a_figure(t: dict):
-    """C27: x = pre-deployment |log r|, y = monthly |log r| (six members x five months)."""
+    """Pre-deployment figure: x = pre-deployment |log r|, y = monthly |log r| (six members x five months)."""
     p = t["rq4_h4a_pairs"]
     grp = h4a_groups(t)
     fig, ax = _axes(8.5)
@@ -469,7 +469,7 @@ def lof_figure(l2: pd.DataFrame, q: float = 0.998):
 # ---------------------------------------------------------------- captions and writing
 
 def tex_outputs(t: dict, meta: dict, me: str) -> dict[str, str]:
-    """name -> LaTeX source of every C23, C24, C26 and C28 table."""
+    """name -> LaTeX source of the hypothesis summary, H4r summary, guard-event and appendix tables."""
     dc = short(meta["commit"])
     src = "results/tables/ieee_cis/run/"
     cm = f"{me} (data {dc})"

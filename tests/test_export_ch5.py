@@ -34,7 +34,7 @@ def copy(t):
     return {k: v.copy() for k, v in t.items()}
 
 
-# ------------------------------------------------------------------ C23 values and sentences
+# ------------------------------------------------------------------ hypothesis summary: values and sentences
 
 def test_hypothesis_table_shows_the_committed_values(run):
     t, meta = run
@@ -93,7 +93,7 @@ def test_h4c_sentence_refuses_changed_fp(run):
         x.hypothesis_table(t2, meta)
 
 
-# ------------------------------------------------------------------ C24, C26, C28
+# ------------------------------------------------------------------ H4r summary, guard events, appendix tables
 
 def test_h4r_tables(run):
     t, _ = run

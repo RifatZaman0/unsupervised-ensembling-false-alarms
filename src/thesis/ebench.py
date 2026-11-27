@@ -62,7 +62,7 @@ def markdown(summ: pd.DataFrame, fried: pd.DataFrame, meta: dict) -> str:
              f"ADBench sets (seed means), under the primary fusion config **{calib} calibration "
              f"+ {agg} fusion**, at the primary ADBench budget **{PRIMARY_BUDGET:.0%}**. FP@K "
              "needs test labels, so this choice uses labels on ADBench only; no fraud data "
-             "enters it. Approved by the supervisor on 2026-10-29.", ""]
+             "enters it. The rule was fixed before any fraud-data result.", ""]
     for b in (PRIMARY_BUDGET, SECONDARY_BUDGET):
         t = triples(summ, b)
         f = fried[(fried.budget.round(9) == round(b, 9)) & (fried["size"] == SIZE)].iloc[0]

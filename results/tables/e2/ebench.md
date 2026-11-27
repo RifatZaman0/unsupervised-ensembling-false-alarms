@@ -4,7 +4,7 @@ Commit `20c84136b6b924c872ba569c56d5a85b9fb71b9e` · source `e2_summary.csv`, `e
 
 ## Rule (declared before any fraud-data result)
 
-E-bench is the triple with the **lowest average FP@K rank** among the 20 triples of the 6-detector pool, over the 15 ADBench sets (seed means), under the primary fusion config **min-max calibration + mean fusion**, at the primary ADBench budget **2%**. FP@K needs test labels, so this choice uses labels on ADBench only; no fraud data enters it. Approved by the supervisor on 2026-10-29.
+E-bench is the triple with the **lowest average FP@K rank** among the 20 triples of the 6-detector pool, over the 15 ADBench sets (seed means), under the primary fusion config **min-max calibration + mean fusion**, at the primary ADBench budget **2%**. FP@K needs test labels, so this choice uses labels on ADBench only; no fraud data enters it. The rule was fixed before any fraud-data result.
 
 ## Top 5 triples at 2%
 

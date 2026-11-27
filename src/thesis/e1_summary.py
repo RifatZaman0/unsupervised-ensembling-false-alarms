@@ -1,4 +1,4 @@
-"""E1 summary table (TDK §3.5.1): detectors compared over the 15 ADBench sets, per budget.
+"""E1 summary table (the TDK paper, tag tdk-submitted): detectors compared over the 15 ADBench sets, per budget.
 
 Built from e1_runs.csv only (no scoring). Seeds are averaged within a dataset first, so every
 dataset counts once. Per dataset, detectors are ranked by FP@K (1 = fewest false alarms) and by
